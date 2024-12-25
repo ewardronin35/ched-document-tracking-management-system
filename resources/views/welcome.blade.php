@@ -774,10 +774,7 @@
                             title: 'Tracking Successful!',
                             html: `
                                 <p>Status for Tracking Number <strong>${trackingNumber}</strong>: <strong>${body.status}</strong></p>
-                                <p><strong>Tracking Number:</strong> ${body.tracking_number}</p>
-                                <button class="copy-btn" data-clipboard-text="${body.tracking_number}" style="padding: 4px 8px; font-size: 0.9rem; cursor: pointer;">
-                                    Copy Tracking Number
-                                </button>
+                            
                             `,
                             icon: 'success',
                             showConfirmButton: true,

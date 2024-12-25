@@ -1,19 +1,21 @@
-<!-- {{-- resources/views/emails/password_generated.blade.php --}} -->
+<!-- resources/views/emails/password-generated.blade.php -->
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Your New Password</title>
-</head>
-<body>
-    <p>Dear {{ $user->name }},</p>
+@component('mail::message')
+# Welcome, {{ $user->name }}!
 
-    <p>Your password has been reset. Your new password is:</p>
+Your account has been created successfully. Below are your login credentials:
 
-    <p><strong>{{ $password }}</strong></p>
+@component('mail::panel')
+**Email:** {{ $user->email }}  
+**Password:** {{ $password }}
+@endcomponent
 
-    <p>Please change your password after logging in.</p>
+Please log in using these credentials and change your password immediately after logging in for security purposes.
 
-    <p>Best regards,<br/>{{ config('app.name') }}</p>
-</body>
-</html>
+@component('mail::button', ['url' => route('login')])
+Login Now
+@endcomponent
+
+Thanks,<br>
+{{ config('app.name') }}
+@endcomponent

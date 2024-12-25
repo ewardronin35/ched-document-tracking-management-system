@@ -1,5 +1,3 @@
-<!-- resources/views/layouts/navigation-menu.blade.php -->
-
 <!-- Main Navigation Bar -->
 <nav class="bg-[#133A86] border-b border-gray-100">
     <!-- Primary Navigation Menu -->
@@ -10,7 +8,7 @@
                 <!-- Sidebar Toggle Button (Visible Only on Small Screens) -->
                 <button 
                     @click="isSidebarOpen = !isSidebarOpen" 
-                    class="text-white focus:outline-none me-4 d-flex align-items-center sm:hidden"
+                    class="text-white focus:outline-none me-4 d-flex align-items-center d-md-none"
                     aria-label="Toggle Sidebar"
                     aria-expanded="isSidebarOpen"
                 >
@@ -21,11 +19,6 @@
                               d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-
-                <!-- Logo -->
-                <a href="{{ route('dashboard') }}" class="flex-shrink-0 flex items-center">
-                    <img class="h-8 w-auto" src="{{ asset('images/logo.png') }}" alt="Logo">
-                </a>
 
                 <!-- Navigation Links (if any) -->
                 <!-- Add your navigation links here -->

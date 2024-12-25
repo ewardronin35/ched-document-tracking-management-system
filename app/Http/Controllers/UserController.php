@@ -13,6 +13,9 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\UsersImport;
 use App\Mail\PasswordGeneratedMail;
 use Illuminate\Support\Facades\Mail;
+use Yajra\DataTables\DataTables;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Response;
 
 class UserController extends Controller
 {
@@ -38,7 +41,28 @@ class UserController extends Controller
         $roles = Role::all();
         return view('manage-users.create', compact('roles'));
     }
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="users_template.csv"',
+        ];
 
+        $columns = ['name', 'email', 'role'];
+
+        $callback = function() use ($columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            // Optionally, add sample data
+            fputcsv($file, ['John Doe', 'john@example.com', 'admin']);
+            fputcsv($file, ['Jane Smith', 'jane@example.com', 'user']);
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
+    }
     /**
      * Store a newly created user in storage.
      *
@@ -47,6 +71,7 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
@@ -178,5 +203,56 @@ class UserController extends Controller
     
         return redirect()->route('manage.users.index')->with('success', "Password generated successfully for {$user->name}.");
     }
-    
+      public function getUsers(Request $request)
+    {
+        if ($request->ajax()) {
+            $data = User::with('roles')->select('users.*');
+
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->addColumn('roles', function($row){
+                    $roles = $row->roles->pluck('name')->toArray();
+                    $badgeHtml = '';
+                    foreach ($roles as $role) {
+                        switch(strtolower($role)) {
+                            case 'admin':
+                                $badgeClass = 'badge-role-admin';
+                                break;
+                            case 'user':
+                                $badgeClass = 'badge-role-user';
+                                break;
+                            default:
+                                $badgeClass = 'bg-secondary';
+                                break;
+                        }
+                        $badgeHtml .= '<span class="badge '.$badgeClass.'">'.ucfirst($role).'</span> ';
+                    }
+                    return $badgeHtml;
+                })
+                ->addColumn('actions', function($row){
+                    $editUrl = route('manage.users.edit', $row->id);
+                    $deleteUrl = route('manage.users.destroy', $row->id);
+                    $csrf = csrf_field();
+                    $method = method_field('DELETE');
+
+                    $buttons = '
+                        <a href="'.$editUrl.'" class="btn btn-sm btn-warning me-1" title="Edit User" data-bs-toggle="tooltip" data-bs-placement="top">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <form action="'.$deleteUrl.'" method="POST" style="display:inline-block;">
+                            '.$csrf.'
+                            '.$method.'
+                            <button type="submit" class="btn btn-sm btn-danger" title="Delete User" data-bs-toggle="tooltip" data-bs-placement="top" onclick="return confirm(\'Are you sure you want to delete this user?\');">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        </form>
+                    ';
+                    return $buttons;
+                })
+                ->rawColumns(['roles', 'actions'])
+                ->make(true);
+        }
+
+        abort(404);
+    }
 }

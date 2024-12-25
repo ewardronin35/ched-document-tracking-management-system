@@ -12,19 +12,22 @@
     <link rel="icon" href="{{ asset('Logo.png') }}" type="image/png">
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link rel="preload" href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript>
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet">
+</noscript>
+
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Blade Stack for Additional Styles -->
+    @stack('styles')
 
     <!-- Tailwind CSS and Custom CSS -->
     @vite(['resources/css/app.css', 'resources/css/sidebar.css', 'resources/js/app.js'])
 
     @livewireStyles
-
-    <!-- Alpine.js (Ensure it's included only once via CDN) -->
-
 </head>
 
 <body class="font-sans antialiased">
@@ -58,29 +61,29 @@
 
     @stack('modals')
 
-    <!-- Bootstrap JS Bundle -->
+    <!-- jQuery (Required for DataTables and Bootstrap JS) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs" defer></script>
+
+    <!-- Bootstrap JS Bundle (Includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Blade Stack for Additional Scripts -->
+    @stack('scripts')
+
     @livewireScripts
-    <script>window.Livewire = { skipAlpine: true };</script>
+
     <!-- Initialize Bootstrap Tooltips -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl)
-            })
-        });
-    </script>
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.store('sidebar', {
-            isOpen: false,
-        });
-    });
-</script>
+    const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+});
 
-    <!-- Include Toastr Partial -->
+    </script>
+
+
+    <!-- Include Toastr Partial (if applicable) -->
     @include('layouts.partials.toastr')
 </body>
 </html>

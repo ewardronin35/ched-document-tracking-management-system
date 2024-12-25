@@ -4,30 +4,28 @@
 <div 
     x-show="isSidebarOpen" 
     @click="isSidebarOpen = false" 
-    class="fixed inset-0 bg-black opacity-50 z-40 sm:hidden" 
+    class="fixed inset-0 bg-black opacity-50 z-40 d-md-none" 
     x-transition
     aria-hidden="true">
 </div>
 
 <div 
     id="sidebar" 
-    class="sidebar text-white d-flex flex-column bg-[#133A86] fixed inset-y-0 left-0 transform 
-           -translate-x-full sm:translate-x-0 transition-transform duration-300 ease-in-out z-50 
-           w-64 overflow-y-auto"
-    x-show="isSidebarOpen" 
-    @click.away="isSidebarOpen = false" 
-    x-transition
->
+    class="sidebar text-white d-flex flex-column bg-[#133A86] fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto 
+           d-none d-md-flex transition-transform duration-300 ease-in-out"
+    :class="{'show': isSidebarOpen}"
+    @click.away="isSidebarOpen = false" >
+
     <!-- Logo and Title -->
     <div class="p-4 d-flex align-items-center">
         <!-- Main Logo -->
-        <img src="{{ asset('images/logo.png') }}" alt="Logo" class="me-2" width="40" height="40">
+        <img src="{{ asset('images/logo.png') }}" alt="Logo" class="me-2" width="40" height="40" loading="lazy">
 
         <!-- Sidebar Title -->
         <span class="fs-5 fw-semibold me-2">CDTMS</span>
 
         <!-- Secondary Logo -->
-        <img src="{{ asset('images/logo2.png') }}" alt="Logo2" class="ms-2" width="40" height="40">
+        <img src="{{ asset('images/logo2.png') }}" alt="Logo2" class="ms-2" width="50" height="50" loading="lazy">
     </div>
 
     <!-- Navigation Links -->
@@ -124,7 +122,8 @@
             </div>
         </li>
 
-        <!-- Manage Users Link -->
+        <!-- Manage Users Link (Visible Only to Admins) -->
+        @role('admin')
         <li class="mb-2">
             <a href="{{ route('manage.users.index') }}" 
                class="d-flex align-items-center text-white text-decoration-none" 
@@ -148,6 +147,7 @@
                 Manage Users
             </a>
         </li>
+        @endrole
 
         <!-- Settings Link with Submenu -->
         <li class="mb-2">
@@ -215,7 +215,8 @@
 
     <!-- Logout Button -->
     <div class="mt-auto p-3">
-        <form method="POST" action="#">
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
             <button type="submit" class="btn btn-danger w-100 d-flex align-items-center">
                 <!-- Logout Icon -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 

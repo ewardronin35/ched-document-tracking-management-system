@@ -7,20 +7,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use Laravel\Jetstream\HasProfilePhoto;
-use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles; // Import the trait
-
-class User extends Authenticatable implements MustVerifyEmail
+use Illuminate\Auth\Passwords\CanResetPassword; // Import the trait
+use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract; 
+class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordContract
 {
     use HasApiTokens;
     use HasFactory;
-    use HasProfilePhoto;
-    use HasTeams;
     use Notifiable;
     use TwoFactorAuthenticatable;
     use HasRoles; // Use the trait
+    use CanResetPassword;
+    protected $guard_name = 'web'; // or whatever guard you want to use
 
     /**
      * The attributes that are mass assignable.
@@ -53,7 +52,10 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $appends = [
         'profile_photo_url',
     ];
-
+    protected $dates = [
+        'password_changed_at',
+        // other dates...
+    ];
     /**
      * Get the attributes that should be cast.
      *
@@ -66,4 +68,5 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
         ];
     }
+    
 }
