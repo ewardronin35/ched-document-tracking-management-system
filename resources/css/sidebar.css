@@ -16,7 +16,7 @@
 
 /* Main Content */
 .main-content {
-    margin-left: 150px; /* Width of the sidebar */
+    margin-left: 250px; /* Width of the sidebar */
     transition: margin-left 0.3s ease;
     width: 100%;
 }
@@ -140,14 +140,17 @@
 }
 @media (max-width: 768px) {
     .sidebar {
-        transform: translateX(-100%); /* Hide sidebar by moving it off-screen */
-        width: 250px;
+        transform: translateX(-100%);
+        z-index: 50;
     }
-
+    .sidebar.show {
+        transform: translateX(0);
+    }
     .main-content {
         margin-left: 0;
     }
 }
+
 
 /* When sidebar is shown on small screens */
 .sidebar.show {

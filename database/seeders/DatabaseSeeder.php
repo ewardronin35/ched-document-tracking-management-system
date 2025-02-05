@@ -15,6 +15,9 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->withPersonalTeam()->create();
         $this->call(RolesAndPermissionsSeeder::class);
+        $this->call(RolesAndPermissionsSeeders::class);
+        $this->call(OutgoingSeeder::class);
+
 
         User::factory()->withPersonalTeam()->create([
             'name' => 'Test User',

@@ -40,7 +40,7 @@
         /* Hero Section */
         .hero-section {
             position: relative;
-            background: url('{{ asset('images/Hero.png') }}') no-repeat center center;
+            background: url('{{ asset('images/Logo.png') }}') no-repeat center center; 
             background-size: cover;
             color: #ffffff;
             padding: 100px 0;
@@ -295,7 +295,7 @@
             <a class="navbar-brand text-white d-flex align-items-center" href="#home">
                 <img src="{{ asset('images/Logo.png') }}" alt="CDTMS Logo" class="h-8 w-auto me-2">
                 <img src="{{ asset('images/Logo2.png') }}" alt="CHED Logo" class="h-8 w-auto me-2">
-                <span class="fw-bold">CDTMS</span>
+                <span class="fw-bold">CHED-eTrack</span>
             </a>
         </div>
     </nav>
@@ -306,7 +306,7 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6 text-center text-lg-start hero-content">
-                    <h1>Welcome to CDTMS</h1>
+                    <h1>Welcome to CHED-eTrack</h1>
                     <p class="mb-4">A comprehensive toolkit for managing and tracking your documents efficiently. Seamlessly upload your files and monitor their status through every stage.</p>
                     <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
                         <button id="show-upload" class="btn btn-lg btn-light me-2 mb-2 mb-lg-0">Upload Document</button>
@@ -541,444 +541,451 @@
 
     <!-- Alpine.js (Optional) -->
     <script src="//unpkg.com/alpinejs" defer></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const featureSection = document.getElementById('feature-section');
+   <!-- ... [Previous HTML content] ... -->
 
-            // Register FilePond plugins
-            FilePond.registerPlugin(
-                FilePondPluginFileValidateSize,
-                FilePondPluginFileValidateType,
-                FilePondPluginImagePreview
-            );
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const featureSection = document.getElementById('feature-section');
 
-            const pond = FilePond.create(document.querySelector('input.filepond'), {
-                allowMultiple: true,
-                allowReorder: true,
-                maxFiles: 10,
-                acceptedFileTypes: ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-                labelIdle: 'Drag & Drop your PDF/DOC/DOCX files or <span class="filepond--label-action">Browse</span>',
-                maxFileSize: '5MB',
-                instantUpload: true,
-                allowFileTypeValidation: true,
-                server: {
-                    process: (fieldName, file, metadata, load, error, progress, abort) => {
-                        // Simulate server processing for demonstration
-                        setTimeout(() => { load('fake-file-id'); }, 500);
-                    },
-                    revert: (uniqueFileId, load, error) => {
-                        load();
-                    }
+        // Register FilePond plugins
+        FilePond.registerPlugin(
+            FilePondPluginFileValidateSize,
+            FilePondPluginFileValidateType,
+            FilePondPluginImagePreview
+        );
+
+        const pond = FilePond.create(document.querySelector('input.filepond'), {
+            allowMultiple: true,
+            allowReorder: true,
+            maxFiles: 10,
+            acceptedFileTypes: ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+            labelIdle: 'Drag & Drop your PDF/DOC/DOCX files or <span class="filepond--label-action">Browse</span>',
+            maxFileSize: '5MB',
+            instantUpload: true,
+            allowFileTypeValidation: true,
+            server: {
+                process: (fieldName, file, metadata, load, error, progress, abort) => {
+                    // Simulate server processing for demonstration
+                    setTimeout(() => { load('fake-file-id'); }, 500);
+                },
+                revert: (uniqueFileId, load, error) => {
+                    load();
+                }
+            }
+        });
+
+        const uploadSectionContainer = document.getElementById('upload-section-container');
+        const trackSectionContainer = document.getElementById('track-section-container');
+
+        const showUploadBtn = document.getElementById('show-upload');
+        const showTrackBtn = document.getElementById('show-track');
+
+        showUploadBtn.addEventListener('click', () => {
+            featureSection.classList.add('hide');
+            setTimeout(() => {
+                featureSection.style.display = 'none';
+            }, 500);
+
+            uploadSectionContainer.style.display = 'block';
+            trackSectionContainer.style.display = 'none';
+            uploadSectionContainer.classList.add('show');
+            trackSectionContainer.classList.remove('show');
+            uploadSectionContainer.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        showTrackBtn.addEventListener('click', () => {
+            featureSection.classList.add('hide');
+            setTimeout(() => {
+                featureSection.style.display = 'none';
+            }, 500);
+
+            trackSectionContainer.style.display = 'block';
+            uploadSectionContainer.style.display = 'none';
+            trackSectionContainer.classList.add('show');
+            uploadSectionContainer.classList.remove('show');
+            trackSectionContainer.scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // Terms Modal
+        const termsModal = document.getElementById('terms-modal');
+        const viewTerms = document.getElementById('view-terms');
+        const agreeButton = document.getElementById('agree-button');
+        const disagreeButton = document.getElementById('disagree-button');
+
+        viewTerms.addEventListener('click', function(e) {
+            e.preventDefault();
+            termsModal.classList.remove('hidden');
+        });
+
+        agreeButton.addEventListener('click', function() {
+            termsModal.classList.add('hidden');
+            document.getElementById('agree_terms').checked = true;
+            Swal.fire('Thank You!', 'You have agreed to the terms and conditions.', 'success');
+        });
+
+        disagreeButton.addEventListener('click', function() {
+            termsModal.classList.add('hidden');
+            document.getElementById('agree_terms').checked = false;
+            Swal.fire('Agreement Required', 'You must agree to the terms and conditions to upload documents.', 'warning');
+        });
+
+        const uploadForm = document.getElementById('upload-form');
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const termsAgreed = document.getElementById('agree_terms').checked;
+            if (!termsAgreed) {
+                Swal.fire('Terms Not Agreed', 'Please agree to the terms and conditions before uploading.', 'warning');
+                return;
+            }
+            Swal.fire({
+                title: 'Uploading...',
+                html: 'Please wait while your document(s) are being uploaded.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
                 }
             });
 
-            const uploadSectionContainer = document.getElementById('upload-section-container');
-            const trackSectionContainer = document.getElementById('track-section-container');
-
-            const showUploadBtn = document.getElementById('show-upload');
-            const showTrackBtn = document.getElementById('show-track');
-
-            showUploadBtn.addEventListener('click', () => {
-                featureSection.classList.add('hide');
-                setTimeout(() => {
-                    featureSection.style.display = 'none';
-                }, 500);
-
-                uploadSectionContainer.style.display = 'block';
-                trackSectionContainer.style.display = 'none';
-                uploadSectionContainer.classList.add('show');
-                trackSectionContainer.classList.remove('show');
-                uploadSectionContainer.scrollIntoView({ behavior: 'smooth' });
+            const formData = new FormData(uploadForm);
+            pond.getFiles().forEach(fileItem => {
+                formData.append('document[]', fileItem.file, fileItem.file.name);
             });
 
-            showTrackBtn.addEventListener('click', () => {
-                featureSection.classList.add('hide');
-                setTimeout(() => {
-                    featureSection.style.display = 'none';
-                }, 500);
+            fetch(uploadForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: formData
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                Swal.close();
+                if (status === 200 && body.success) {
+                    let htmlContent = '<div style="text-align: left;">';
+                    body.documents.forEach(doc => {
+                        htmlContent += `
+                            <div style="margin-bottom: 10px;">
+                                <strong>Document ID:</strong> ${doc.document_id}<br>
+                                <strong>Tracking Number:</strong> ${doc.tracking_number}
+                                <button class="copy-btn" data-clipboard-text="${doc.tracking_number}" style="margin-left: 10px; padding: 2px 6px; font-size: 0.8rem; cursor: pointer;">
+                                    Copy
+                                </button>
+                            </div>
+                        `;
+                    });
+                    htmlContent += '</div>';
 
-                trackSectionContainer.style.display = 'block';
-                uploadSectionContainer.style.display = 'none';
-                trackSectionContainer.classList.add('show');
-                uploadSectionContainer.classList.remove('show');
-                trackSectionContainer.scrollIntoView({ behavior: 'smooth' });
-            });
-
-            // Terms Modal
-            const termsModal = document.getElementById('terms-modal');
-            const viewTerms = document.getElementById('view-terms');
-            const agreeButton = document.getElementById('agree-button');
-            const disagreeButton = document.getElementById('disagree-button');
-
-            viewTerms.addEventListener('click', function(e) {
-                e.preventDefault();
-                termsModal.classList.remove('hidden');
-            });
-
-            agreeButton.addEventListener('click', function() {
-                termsModal.classList.add('hidden');
-                document.getElementById('agree_terms').checked = true;
-                Swal.fire('Thank You!', 'You have agreed to the terms and conditions.', 'success');
-            });
-
-            disagreeButton.addEventListener('click', function() {
-                termsModal.classList.add('hidden');
-                document.getElementById('agree_terms').checked = false;
-                Swal.fire('Agreement Required', 'You must agree to the terms and conditions to upload documents.', 'warning');
-            });
-
-            const uploadForm = document.getElementById('upload-form');
-            uploadForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const termsAgreed = document.getElementById('agree_terms').checked;
-                if (!termsAgreed) {
-                    Swal.fire('Terms Not Agreed', 'Please agree to the terms and conditions before uploading.', 'warning');
-                    return;
-                }
-                Swal.fire({
-                    title: 'Uploading...',
-                    html: 'Please wait while your document(s) are being uploaded.',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-
-                const formData = new FormData(uploadForm);
-                pond.getFiles().forEach(fileItem => {
-                    formData.append('document[]', fileItem.file, fileItem.file.name);
-                });
-
-                fetch(uploadForm.action, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: formData
-                })
-                .then(response => response.json().then(data => ({ status: response.status, body: data })))
-                .then(({ status, body }) => {
-                    Swal.close();
-                    if (status === 200 && body.success) {
-                        let htmlContent = '<div style="text-align: left;">';
-                        body.documents.forEach(doc => {
-                            htmlContent += `
-                                <div style="margin-bottom: 10px;">
-                                    <strong>Document ID:</strong> ${doc.document_id}<br>
-                                    <strong>Tracking Number:</strong> ${doc.tracking_number}
-                                    <button class="copy-btn" data-clipboard-text="${doc.tracking_number}" style="margin-left: 10px; padding: 2px 6px; font-size: 0.8rem; cursor: pointer;">
-                                        Copy
-                                    </button>
-                                </div>
-                            `;
+                    Swal.fire({
+                        title: 'Success!',
+                        html: `
+                            <p>Your document(s) have been uploaded successfully.</p>
+                            ${htmlContent}
+                        `,
+                        icon: 'success',
+                        showConfirmButton: true,
+                        didOpen: () => {
+                            const copyButtons = Swal.getHtmlContainer().querySelectorAll('.copy-btn');
+                            copyButtons.forEach(button => {
+                                button.addEventListener('click', () => {
+                                    const textToCopy = button.getAttribute('data-clipboard-text');
+                                    navigator.clipboard.writeText(textToCopy).then(() => {
+                                        Swal.fire({
+                                            title: 'Copied!',
+                                            text: 'Tracking number has been copied to clipboard.',
+                                            icon: 'success',
+                                            timer: 1500,
+                                            showConfirmButton: false
+                                        });
+                                    }).catch(err => {
+                                        Swal.fire({
+                                            title: 'Error!',
+                                            text: 'Failed to copy tracking number.',
+                                            icon: 'error',
+                                            timer: 1500,
+                                            showConfirmButton: false
+                                        });
+                                    });
+                                });
+                            });
+                        }
+                    }).then(() => {
+                        uploadForm.reset();
+                        pond.removeFiles();
+                        resetStatusChart();
+                    });
+                } else if (status === 422) {
+                    // Display validation errors
+                    let errorHtml = '<div style="text-align: left;">';
+                    for (const [field, messages] of Object.entries(body.errors)) {
+                        messages.forEach(message => {
+                            errorHtml += `<p><strong>${field}:</strong> ${message}</p>`;
                         });
-                        htmlContent += '</div>';
+                    }
+                    errorHtml += '</div>';
 
-                        Swal.fire({
-                            title: 'Success!',
-                            html: `
-                                <p>Your document(s) have been uploaded successfully.</p>
-                                ${htmlContent}
-                            `,
-                            icon: 'success',
-                            showConfirmButton: true,
-                            didOpen: () => {
-                                const copyButtons = Swal.getHtmlContainer().querySelectorAll('.copy-btn');
-                                copyButtons.forEach(button => {
-                                    button.addEventListener('click', () => {
-                                        const textToCopy = button.getAttribute('data-clipboard-text');
-                                        navigator.clipboard.writeText(textToCopy).then(() => {
-                                            Swal.fire({
-                                                title: 'Copied!',
-                                                text: 'Tracking number has been copied to clipboard.',
-                                                icon: 'success',
-                                                timer: 1500,
-                                                showConfirmButton: false
-                                            });
-                                        }).catch(err => {
-                                            Swal.fire({
-                                                title: 'Error!',
-                                                text: 'Failed to copy tracking number.',
-                                                icon: 'error',
-                                                timer: 1500,
-                                                showConfirmButton: false
-                                            });
+                    Swal.fire({
+                        title: 'Validation Error',
+                        html: errorHtml,
+                        icon: 'error',
+                        showConfirmButton: true
+                    });
+                } else {
+                    Swal.fire('Error!', body.message || 'There was an error uploading your document(s).', 'error');
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                Swal.fire('Error!', 'There was an unexpected error.', 'error');
+                console.error('Upload Error:', error);
+            });
+        });
+
+        const trackForm = document.getElementById('track-form');
+        trackForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const trackingNumber = document.getElementById('tracking_number').value.trim();
+            if (trackingNumber === '') {
+                Swal.fire('Input Required', 'Please enter a Tracking Number.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Tracking...',
+                html: 'Please wait while we retrieve the status of your document.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Adjust the tracking request to use the correct route
+            fetch(`/documents/track?tracking_number=${encodeURIComponent(trackingNumber)}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(({ status, body }) => {
+                Swal.close();
+                if (status === 200 && body.success) {
+                    updateStatusChart(body.status, body.details, body.file_names || []);
+                    Swal.fire({
+                        title: 'Tracking Successful!',
+                        html: `
+                            <p>Status for Tracking Number <strong>${trackingNumber}</strong>: <strong>${body.status}</strong></p>
+                            <button class="copy-btn" data-clipboard-text="${trackingNumber}" style="margin-top: 10px; padding: 2px 6px; font-size: 0.8rem; cursor: pointer;">
+                                Copy Tracking Number
+                            </button>
+                        `,
+                        icon: 'success',
+                        showConfirmButton: true,
+                        didOpen: () => {
+                            const copyButton = Swal.getHtmlContainer().querySelector('.copy-btn');
+                            if (copyButton) {
+                                copyButton.addEventListener('click', () => {
+                                    const textToCopy = copyButton.getAttribute('data-clipboard-text');
+                                    navigator.clipboard.writeText(textToCopy).then(() => {
+                                        Swal.fire({
+                                            title: 'Copied!',
+                                            text: 'Tracking number has been copied to clipboard.',
+                                            icon: 'success',
+                                            timer: 1500,
+                                            showConfirmButton: false
+                                        });
+                                    }).catch(err => {
+                                        Swal.fire({
+                                            title: 'Error!',
+                                            text: 'Failed to copy tracking number.',
+                                            icon: 'error',
+                                            timer: 1500,
+                                            showConfirmButton: false
                                         });
                                     });
                                 });
                             }
-                        }).then(() => {
-                            uploadForm.reset();
-                            pond.removeFiles();
-                            resetStatusChart();
-                        });
-                    } else if (status === 422) {
-                        // Display validation errors
-                        let errorHtml = '<div style="text-align: left;">';
-                        for (const [field, messages] of Object.entries(body.errors)) {
-                            messages.forEach(message => {
-                                errorHtml += `<p><strong>${field}:</strong> ${message}</p>`;
-                            });
                         }
-                        errorHtml += '</div>';
-
-                        Swal.fire({
-                            title: 'Validation Error',
-                            html: errorHtml,
-                            icon: 'error',
-                            showConfirmButton: true
-                        });
-                    } else {
-                        Swal.fire('Error!', body.message || 'There was an error uploading your document(s).', 'error');
-                    }
-                })
-                .catch(error => {
-                    Swal.close();
-                    Swal.fire('Error!', 'There was an unexpected error.', 'error');
-                    console.error('Upload Error:', error);
-                });
-            });
-
-            const trackForm = document.getElementById('track-form');
-            trackForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const trackingNumber = document.getElementById('tracking_number').value.trim();
-                if (trackingNumber === '') {
-                    Swal.fire('Input Required', 'Please enter a Tracking Number.', 'warning');
-                    return;
-                }
-
-                Swal.fire({
-                    title: 'Tracking...',
-                    html: 'Please wait while we retrieve the status of your document.',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-
-                fetch(trackForm.action + '?tracking_number=' + encodeURIComponent(trackingNumber), {
-                    method: 'GET',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
-                    },
-                })
-                .then(response => response.json().then(data => ({ status: response.status, body: data })))
-                .then(({ status, body }) => {
-                    Swal.close();
-                    if (status === 200 && body.success) {
-                        updateStatusChart(body.status, body.details, body.file_names || []);
-                        Swal.fire({
-                            title: 'Tracking Successful!',
-                            html: `
-                                <p>Status for Tracking Number <strong>${trackingNumber}</strong>: <strong>${body.status}</strong></p>
-                            
-                            `,
-                            icon: 'success',
-                            showConfirmButton: true,
-                            didOpen: () => {
-                                const copyButton = Swal.getHtmlContainer().querySelector('.copy-btn');
-                                if (copyButton) {
-                                    copyButton.addEventListener('click', () => {
-                                        const textToCopy = copyButton.getAttribute('data-clipboard-text');
-                                        navigator.clipboard.writeText(textToCopy).then(() => {
-                                            Swal.fire({
-                                                title: 'Copied!',
-                                                text: 'Tracking number has been copied to clipboard.',
-                                                icon: 'success',
-                                                timer: 1500,
-                                                showConfirmButton: false
-                                            });
-                                        }).catch(err => {
-                                            Swal.fire({
-                                                title: 'Error!',
-                                                text: 'Failed to copy tracking number.',
-                                                icon: 'error',
-                                                timer: 1500,
-                                                showConfirmButton: false
-                                            });
-                                        });
-                                    });
-                                }
-                            }
-                        }).then(() => {
-                            trackForm.reset();
-                        });
-                    } else if (status === 422) {
-                        // Display validation errors
-                        let errorHtml = '<div style="text-align: left;">';
-                        for (const [field, messages] of Object.entries(body.errors)) {
-                            messages.forEach(message => {
-                                errorHtml += `<p><strong>${field}:</strong> ${message}</p>`;
-                            });
-                        }
-                        errorHtml += '</div>';
-
-                        Swal.fire({
-                            title: 'Validation Error',
-                            html: errorHtml,
-                            icon: 'error',
-                            showConfirmButton: true
-                        });
-                    } else {
-                        Swal.fire('Error!', body.message || 'Unable to track your document.', 'error');
-                    }
-                })
-                .catch(error => {
-                    Swal.close();
-                    Swal.fire('Error!', 'There was an unexpected error.', 'error');
-                    console.error('Track Error:', error);
-                });
-            });
-
-            // Utility Functions
-
-            function resetStatusChart() {
-                setStepColor(1, 'gray');
-                setStepColor(2, 'gray');
-                setStepColor(3, 'gray');
-                setStepColor(4, 'gray');
-                document.getElementById('status-details').style.display = 'none';
-                document.getElementById('status-details').classList.remove('show');
-                // Hide all ongoing animations
-                hideAllOngoingAnimations();
-            }
-
-            function hideAllOngoingAnimations() {
-                for (let i = 1; i <=3; i++) {
-                    const ongoingAnim = document.getElementById(`ongoing-animation-${i}`);
-                    if (ongoingAnim) {
-                        ongoingAnim.classList.remove('show');
-                    }
-                }
-            }
-
-            function showOngoingAnimation(stepNumber) {
-                hideAllOngoingAnimations();
-                const ongoingAnim = document.getElementById(`ongoing-animation-${stepNumber}`);
-                if (ongoingAnim) {
-                    ongoingAnim.classList.add('show');
-                }
-            }
-
-            function updateStatusChart(status, details, fileNames) {
-                resetStatusChart();
-                // Show status details
-                const statusDetails = document.getElementById('status-details');
-                const statusMessage = document.getElementById('status-message');
-                const statusTimestamp = document.getElementById('status-timestamp');
-                const fileNamesContainer = document.getElementById('file-names');
-                const fileList = document.getElementById('file-list');
-
-                statusMessage.textContent = details && details.message ? details.message : '';
-                statusTimestamp.textContent = details && details.timestamp ? `Last updated: ${new Date(details.timestamp).toLocaleString()}` : '';
-
-                // Display file names if provided
-                if (fileNames && fileNames.length > 0) {
-                    fileList.innerHTML = '';
-                    fileNames.forEach(name => {
-                        const li = document.createElement('li');
-                        li.textContent = name;
-                        fileList.appendChild(li);
+                    }).then(() => {
+                        trackForm.reset();
                     });
-                    fileNamesContainer.style.display = 'block';
+                } else if (status === 422) {
+                    // Display validation errors
+                    let errorHtml = '<div style="text-align: left;">';
+                    for (const [field, messages] of Object.entries(body.errors)) {
+                        messages.forEach(message => {
+                            errorHtml += `<p><strong>${field}:</strong> ${message}</p>`;
+                        });
+                    }
+                    errorHtml += '</div>';
+
+                    Swal.fire({
+                        title: 'Validation Error',
+                        html: errorHtml,
+                        icon: 'error',
+                        showConfirmButton: true
+                    });
                 } else {
-                    fileNamesContainer.style.display = 'none';
+                    Swal.fire('Error!', body.message || 'Unable to track your document.', 'error');
                 }
-
-                statusDetails.style.display = 'block';
-                setTimeout(() => {
-                    statusDetails.classList.add('show');
-                }, 50); // Slight delay for transition
-
-                switch(status) {
-                    case 'Submitted':
-                        // Step 1 active, show ongoing-animation-1
-                        setStepColor(1, 'blue', true);
-                        setStepColor(2, 'gray');
-                        setStepColor(3, 'gray');
-                        setStepColor(4, 'gray');
-                        showOngoingAnimation(1);
-                        break;
-                    case 'Processing':
-                        // Step 1 completed, Step 2 active, show ongoing-animation-2
-                        setStepColor(1, 'blue', false, true);
-                        setStepColor(2, 'processing', true);
-                        setStepColor(3, 'gray');
-                        setStepColor(4, 'gray');
-                        showOngoingAnimation(2);
-                        break;
-                    case 'Approved':
-                        // Steps 1 & 2 completed, Step 3 active
-                        setStepColor(1, 'blue', false, true);
-                        setStepColor(2, 'processing', false, true);
-                        setStepColor(3, 'approved', true);
-                        setStepColor(4, 'gray');
-                        // No ongoing animation needed
-                        break;
-                    case 'Rejected':
-                        // Steps 1 & 2 completed, Step 3 active (rejected)
-                        setStepColor(1, 'blue', false, true);
-                        setStepColor(2, 'processing', false, true);
-                        setStepColor(3, 'rejected', true);
-                        setStepColor(4, 'gray');
-                        // No ongoing animation needed
-                        break;
-                    case 'Released':
-                        // All steps completed
-                        setStepColor(1, 'blue', false, true);
-                        setStepColor(2, 'processing', false, true);
-                        setStepColor(3, 'approved', false, true);
-                        setStepColor(4, 'approved', true);
-                        // No ongoing animation needed
-                        break;
-                    default:
-                        Swal.fire('Error!', 'Unknown status received.', 'error');
-                        break;
-                }
-            }
-
-            function setStepColor(stepNumber, color, active = false, completed = false) {
-                const stepElement = document.getElementById(`stage-${stepNumber}`);
-                if (!stepElement) return;
-
-                // Remove all possible color classes
-                stepElement.classList.remove('bg-blue-step', 'bg-submitted', 'bg-processing', 'bg-approved', 'bg-rejected');
-
-                // Assign new color based on status
-                switch(color) {
-                    case 'blue':
-                        stepElement.classList.add('bg-blue-step'); // Blue for active step
-                        break;
-                    case 'gray':
-                        stepElement.classList.add('bg-submitted'); // Gray for inactive
-                        break;
-                    case 'processing':
-                        stepElement.classList.add('bg-processing'); // Yellow for processing
-                        break;
-                    case 'approved':
-                        stepElement.classList.add('bg-approved'); // Green for approved
-                        break;
-                    case 'rejected':
-                        stepElement.classList.add('bg-rejected'); // Red for rejected
-                        break;
-                    default:
-                        stepElement.classList.add('bg-submitted');
-                        break;
-                }
-
-                // Add active or completed classes
-                if (active) {
-                    stepElement.classList.add('active-step');
-                }
-                if (completed) {
-                    stepElement.classList.add('completed-step');
-                }
-            }
+            })
+            .catch(error => {
+                Swal.close();
+                Swal.fire('Error!', 'There was an unexpected error.', 'error');
+                console.error('Track Error:', error);
+            });
         });
-    </script>
+
+        // Utility Functions
+
+        function resetStatusChart() {
+            setStepColor(1, 'gray');
+            setStepColor(2, 'gray');
+            setStepColor(3, 'gray');
+            setStepColor(4, 'gray');
+            document.getElementById('status-details').style.display = 'none';
+            document.getElementById('status-details').classList.remove('show');
+            // Hide all ongoing animations
+            hideAllOngoingAnimations();
+        }
+
+        function hideAllOngoingAnimations() {
+            for (let i = 1; i <=3; i++) {
+                const ongoingAnim = document.getElementById(`ongoing-animation-${i}`);
+                if (ongoingAnim) {
+                    ongoingAnim.classList.remove('show');
+                }
+            }
+        }
+
+        function showOngoingAnimation(stepNumber) {
+            hideAllOngoingAnimations();
+            const ongoingAnim = document.getElementById(`ongoing-animation-${stepNumber}`);
+            if (ongoingAnim) {
+                ongoingAnim.classList.add('show');
+            }
+        }
+
+        function updateStatusChart(status, details, fileNames) {
+            resetStatusChart();
+            // Show status details
+            const statusDetails = document.getElementById('status-details');
+            const statusMessage = document.getElementById('status-message');
+            const statusTimestamp = document.getElementById('status-timestamp');
+            const fileNamesContainer = document.getElementById('file-names');
+            const fileList = document.getElementById('file-list');
+
+            statusMessage.textContent = details && details.message ? details.message : '';
+            statusTimestamp.textContent = details && details.timestamp ? `Last updated: ${new Date(details.timestamp).toLocaleString()}` : '';
+
+            // Display file names if provided
+            if (fileNames && fileNames.length > 0) {
+                fileList.innerHTML = '';
+                fileNames.forEach(name => {
+                    const li = document.createElement('li');
+                    li.textContent = name;
+                    fileList.appendChild(li);
+                });
+                fileNamesContainer.style.display = 'block';
+            } else {
+                fileNamesContainer.style.display = 'none';
+            }
+
+            statusDetails.style.display = 'block';
+            setTimeout(() => {
+                statusDetails.classList.add('show');
+            }, 50); // Slight delay for transition
+
+            switch(status) {
+                case 'Submitted':
+                    // Step 1 active, show ongoing-animation-1
+                    setStepColor(1, 'blue', true);
+                    setStepColor(2, 'gray');
+                    setStepColor(3, 'gray');
+                    setStepColor(4, 'gray');
+                    showOngoingAnimation(1);
+                    break;
+                case 'Processing':
+                    // Step 1 completed, Step 2 active, show ongoing-animation-2
+                    setStepColor(1, 'blue', false, true);
+                    setStepColor(2, 'processing', true);
+                    setStepColor(3, 'gray');
+                    setStepColor(4, 'gray');
+                    showOngoingAnimation(2);
+                    break;
+                case 'Approved':
+                    // Steps 1 & 2 completed, Step 3 active
+                    setStepColor(1, 'blue', false, true);
+                    setStepColor(2, 'processing', false, true);
+                    setStepColor(3, 'approved', true);
+                    setStepColor(4, 'gray');
+                    // No ongoing animation needed
+                    break;
+                case 'Rejected':
+                    // Steps 1 & 2 completed, Step 3 active (rejected)
+                    setStepColor(1, 'blue', false, true);
+                    setStepColor(2, 'processing', false, true);
+                    setStepColor(3, 'rejected', true);
+                    setStepColor(4, 'gray');
+                    // No ongoing animation needed
+                    break;
+                case 'Released':
+                    // All steps completed
+                    setStepColor(1, 'blue', false, true);
+                    setStepColor(2, 'processing', false, true);
+                    setStepColor(3, 'approved', false, true);
+                    setStepColor(4, 'approved', true);
+                    // No ongoing animation needed
+                    break;
+                default:
+                    Swal.fire('Error!', 'Unknown status received.', 'error');
+                    break;
+            }
+        }
+
+        function setStepColor(stepNumber, color, active = false, completed = false) {
+            const stepElement = document.getElementById(`stage-${stepNumber}`);
+            if (!stepElement) return;
+
+            // Remove all possible color classes
+            stepElement.classList.remove('bg-blue-step', 'bg-submitted', 'bg-processing', 'bg-approved', 'bg-rejected');
+
+            // Assign new color based on status
+            switch(color) {
+                case 'blue':
+                    stepElement.classList.add('bg-blue-step'); // Blue for active step
+                    break;
+                case 'gray':
+                    stepElement.classList.add('bg-submitted'); // Gray for inactive
+                    break;
+                case 'processing':
+                    stepElement.classList.add('bg-processing'); // Yellow for processing
+                    break;
+                case 'approved':
+                    stepElement.classList.add('bg-approved'); // Green for approved
+                    break;
+                case 'rejected':
+                    stepElement.classList.add('bg-rejected'); // Red for rejected
+                    break;
+                default:
+                    stepElement.classList.add('bg-submitted');
+                    break;
+            }
+
+            // Add active or completed classes
+            if (active) {
+                stepElement.classList.add('active-step');
+            }
+            if (completed) {
+                stepElement.classList.add('completed-step');
+            }
+        }
+    });
+</script>
+
+<!-- ... [Remaining HTML content] ... -->
 
 </body>
 </html>

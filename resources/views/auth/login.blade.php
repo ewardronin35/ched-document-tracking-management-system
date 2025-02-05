@@ -12,10 +12,20 @@
 
         <!-- Authentication Card -->
         <div class="relative z-10 w-full max-w-md p-8 bg-white rounded-xl shadow-lg border border-gray-300">
-            <div class="flex flex-col items-center">
-                <img src="{{ asset('images/Logo.png') }}" alt="Authentication Card Logo" class="h-20 w-auto">
-                <h1 class="text-center text-3xl font-bold text-gray-800 mt-4">Welcome to CDTMS</h1>
-            </div>
+    <!-- Logos Section -->
+    <div class="flex justify-between items-center mb-4">
+        <!-- Left-Aligned Logo -->
+        <img src="{{ asset('images/Logo.png') }}" alt="Left Logo" class="h-20 w-auto">
+        
+        <!-- Title -->
+        <h1 class="text-center text-3xl font-bold text-black-800">Welcome to CHED-eTrack</h1>
+
+        <!-- Right-Aligned Logo -->
+        <img src="{{ asset('images/Logo2.png') }}" alt="Right Logo" class="h-20 w-auto">
+    </div>
+    <!-- Title -->    
+    <!-- Rest of your content goes here -->
+
 
             <!-- Validation Errors -->
             <x-validation-errors class="mb-4 text-red-600" />
@@ -64,14 +74,7 @@
             </form>
 
             <!-- Register Redirect -->
-            <div class="mt-4 text-center">
-                <p class="text-sm text-gray-800">
-                    Don't have an account? 
-                    <a href="{{ route('register') }}" class="text-blue-600 hover:underline">
-                        Register
-                    </a>
-                </p>
-            </div>
+           
         </div>
     </div>
 

@@ -4,6 +4,12 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use App\Models\Document;
+use App\Models\SoMasterList;
+use App\Models\Outgoing;
+use App\Policies\DocumentPolicy;
+use App\Policies\SoMasterListPolicy;
+use App\Policies\OutgoingPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -13,7 +19,11 @@ class AuthServiceProvider extends ServiceProvider
      * @var array
      */
     protected $policies = [
-        // 'App\Models\Model' => 'App\Policies\ModelPolicy',
+    
+        Document::class => DocumentPolicy::class,
+        SoMasterList::class => SoMasterListPolicy::class,
+        Outgoing::class => OutgoingPolicy::class,
+
     ];
 
     /**

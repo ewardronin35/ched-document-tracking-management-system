@@ -61,7 +61,6 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'password.changed' => \App\Http\Middleware\CheckPasswordChanged::class,
 
         // Spatie's middleware
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,  

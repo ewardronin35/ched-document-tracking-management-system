@@ -32,11 +32,18 @@ class PasswordResetMail extends Mailable
      */
     public function build()
     {
-        return $this->markdown('emails.password-reset')
+        return $this->view('emails.ched_verification')
             ->subject('Set Your Password')
             ->with([
                 'name' => $this->user->name,
-                'resetLink' => url('/password/reset', $this->token) . '?email=' . urlencode($this->user->email),
+                'actionUrl' => route('password.reset', [
+                    'token' => $this->token,
+                    'email' => $this->user->email,
+                ]),
+                'actionText' => 'Reset Password',
+                'greeting' => 'Hello!',
+                'token' => $this->token, // Pass the token
+                'email' => $this->user->email, // Pass the email
             ]);
     }
 }

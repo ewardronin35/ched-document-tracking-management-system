@@ -34,4 +34,8 @@ class Document extends Model
     protected $casts = [
         'status_details' => 'array',
     ];
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'email', 'email');
+    }
 }

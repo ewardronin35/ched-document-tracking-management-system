@@ -22,10 +22,10 @@
         <img src="{{ asset('images/logo.png') }}" alt="Logo" class="me-2" width="40" height="40" loading="lazy">
 
         <!-- Sidebar Title -->
-        <span class="fs-5 fw-semibold me-2">CDTMS</span>
+        <span class="fs-5 fw-semibold me-2">CHED-eTrack</span>
 
         <!-- Secondary Logo -->
-        <img src="{{ asset('images/logo2.png') }}" alt="Logo2" class="ms-2" width="50" height="50" loading="lazy">
+        <img src="{{ asset('images/logo2.png') }}" alt="Logo2" class="ms-2" width="40" height="40" loading="lazy">
     </div>
 
     <!-- Navigation Links -->
@@ -42,7 +42,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" 
                      class="bi bi-house-fill me-2" viewBox="0 0 16 16" aria-label="Home Icon">
                     <path fill-rule="evenodd" d="M8 3.293l6 6V13.5a.5.5 0 0 1-.5.5h-4v-4H6v4H2.5a.5.5
-                    0 0 1-.5-.5V9.293l6-6zm5 6.707V13h-2v-3.293l-4 4V13h-2v-3.293l-4-4V13H1v-3.293l7-7 
+                    0 0 1-.5-.5V9.293l6-6zm5 6.707V13h-2v-3.293l-4 4V13h-2v-3.293l-4-4V13H1v-3.293l7-7
                     7 7z"/>
                 </svg>
                 Home
@@ -59,14 +59,18 @@
                     <!-- Dashboard SVG Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" 
                          class="bi bi-speedometer2 me-2" viewBox="0 0 16 16" aria-label="Dashboard Icon">
-                        <path d="M8 4a.5.5 0 0 1 .5.5V8a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4z"/>
                         <path fill-rule="evenodd"
-                              d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-6.916 6H1a.5.5
-                              0 0 1 0 1h.084A6.978 6.978 
-                              0 0 1 8 1a6.978 6.978 
-                              0 0 1 6.916 5H15a.5.5 
-                              0 0 1 0 1h-.084A7 7 
-                              0 0 0 8 1z"/>
+                              d="M9.828 4a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-1a.5.5 
+                              0 0 1-.5-.5v-9a.5.5 
+                              0 0 1 .5-.5h1zm-6.5 
+                              1H4a.5.5 0 0 1 .5.5v9a.5.5 
+                              0 0 1-.5.5h-1a.5.5 
+                              0 0 1-.5-.5v-9a.5.5 
+                              0 0 1 .5-.5h1zm5 
+                              0H2.5a.5.5 0 0 0-.5.5v9a.5.5 
+                              0 0 0 .5.5h5a.5.5 
+                              0 0 0 .5-.5v-9a.5.5 
+                              0 0 0-.5-.5z"/>
                     </svg>
                     Dashboard
                     <!-- Submenu Indicator Icon -->
@@ -122,31 +126,323 @@
             </div>
         </li>
 
+        <!-- Manage Documents Link (Visible Only to Admins) -->
+        @role('admin')
+            <li class="mb-2">
+                <div x-data="{ openSubmenu: false }">
+                    <a href="javascript:void(0)" 
+                       @click="openSubmenu = !openSubmenu" 
+                       class="d-flex align-items-center text-white text-decoration-none {{ request()->routeIs('admin.documents.*') ? 'bg-primary rounded' : '' }}">
+                        <!-- Documents SVG Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                             class="bi bi-folder-fill me-2" viewBox="0 0 16 16" aria-label="Manage Documents Icon">
+                            <path d="M9.828 4a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-1a.5.5 
+                                     0 0 1-.5-.5v-9a.5.5 
+                                     0 0 1 .5-.5h1zm-6.5 
+                                     1H4a.5.5 0 0 1 .5.5v9a.5.5 
+                                     0 0 1-.5.5h-1a.5.5 
+                                     0 0 1-.5-.5v-9a.5.5 
+                                     0 0 1 .5-.5h1zm5 
+                                     0H2.5a.5.5 0 0 0-.5.5v9a.5.5 
+                                     0 0 0 .5.5h5a.5.5 
+                                     0 0 0 .5-.5v-9a.5.5 
+                                     0 0 0-.5-.5z"/>
+                        </svg>
+                        Manage Documents
+                        <!-- Submenu Indicator Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                             class="bi bi-chevron-down ms-auto submenu-indicator transition-transform duration-300" 
+                             viewBox="0 0 16 16" 
+                             :class="{'rotate-90': openSubmenu }">
+                            <path fill-rule="evenodd" 
+                                  d="M1.646 4.646a.5.5 
+                                  0 0 1 .708 0L8 
+                                  10.293l5.646-5.647a.5.5 
+                                  0 0 1 .708.708l-6 6a.5.5 
+                                  0 0 1-.708 0l-6-6a.5.5 
+                                  0 0 1 0-.708z"/>
+                        </svg>
+                    </a>
+                    <ul class="list-unstyled ps-4 mt-2" x-show="openSubmenu" x-transition>
+                        <li class="mb-1">
+                            <a href="{{ route('admin.documents.index') }}" 
+                               class="d-flex align-items-center text-white text-decoration-none {{ request()->routeIs('admin.documents.track') ? 'bg-primary rounded' : '' }}" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="right" 
+                               title="Track Documents"
+                               @click="isSidebarOpen = false">
+                                <!-- Track Documents SVG Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                     class="bi bi-eye-fill me-2" viewBox="0 0 16 16" aria-label="Track Documents Icon">
+                                    <path d="M10.5 6a.5.5 0 1 1 0 1H2.5a.5.5 
+                                             0 0 1 0-1h8zm0 2a.5.5 0 
+                                             1 1 0 1H2.5a.5.5 
+                                             0 0 1 0-1h8zm0 2a.5.5 
+                                             0 1 1 0 1H2.5a.5.5 
+                                             0 0 1 0-1h8z"/>
+                                    <path fill-rule="evenodd" 
+                                          d="M8 4a4 4 0 1 0 0 8 
+                                          4 4 0 0 0 0-8zM0 8a8 8 
+                                          0 1 1 16 0A8 8 0 0 1 0 
+                                          8zm8-3a3 3 0 1 1 0 6 
+                                          3 3 0 0 1 0-6z"/>
+                                </svg>
+                                Track Documents
+                            </a>
+                        </li>
+                        <li class="mb-1">
+                            <a href="{{ route('admin.so_master_lists.index') }}" 
+                               class="d-flex align-items-center text-white text-decoration-none {{ request()->routeIs('admin.so_master_lists.*') ? 'bg-primary rounded' : '' }}" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="right" 
+                               title="SOMasterList"
+                               @click="isSidebarOpen = false">
+                                <!-- SOMasterList SVG Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                     class="bi bi-list-ul me-2" viewBox="0 0 16 16" aria-label="SOMasterList Icon">
+                                    <path d="M3 12.5a.5.5 0 0 1 .5-.5h9a.5.5 0 
+                                             0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 
+                                             0 1 .5-.5h9a.5.5 0 
+                                             0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 
+                                             0 1 .5-.5h9a.5.5 0 
+                                             0 1 0 1h-9a.5.5 0 0 1-.5-.5z"/>
+                                    <path d="M4.5 3a.5.5 0 0 1 .5.5v1a.5.5 
+                                             0 0 1-1 0v-1a.5.5 
+                                             0 0 1 .5-.5zm0 
+                                             5a.5.5 0 0 1 .5.5v1a.5.5 
+                                             0 0 1-1 0v-1a.5.5 
+                                             0 0 1 .5-.5zm0 
+                                             5a.5.5 0 0 1 .5.5v1a.5.5 
+                                             0 0 1-1 0v-1a.5.5 
+                                             0 0 1 .5-.5z"/>
+                                </svg>
+                                SOMasterList
+                            </a>
+                        </li>
+
+                        <!-- CAV Submenu -->
+                        <li class="mb-2">
+                            <div x-data="{ openCavSubmenu: false }">
+                                <a href="javascript:void(0)" 
+                                   @click="openCavSubmenu = !openCavSubmenu" 
+                                   class="d-flex align-items-center text-white text-decoration-none">
+                                    <!-- CAV SVG Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                         class="bi bi-book-fill me-2" viewBox="0 0 16 16" aria-label="CAV Icon">
+                                        <path d="M9.828 4a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-1a.5.5 
+                                                 0 0 1-.5-.5v-9a.5.5 
+                                                 0 0 1 .5-.5h1zm-6.5 
+                                                 1H4a.5.5 0 0 1 .5.5v9a.5.5 
+                                                 0 0 1-.5.5h-1a.5.5 
+                                                 0 0 1-.5-.5v-9a.5.5 
+                                                 0 0 1 .5-.5h1zm5 
+                                                 0H2.5a.5.5 0 0 0-.5.5v9a.5.5 
+                                                 0 0 0 .5.5h5a.5.5 
+                                                 0 0 0 .5-.5v-9a.5.5 
+                                                 0 0 0-.5-.5z"/>
+                                    </svg>
+                                    CAV
+                                    <!-- Submenu Indicator Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                         class="bi bi-chevron-down ms-auto submenu-indicator transition-transform duration-300" 
+                                         viewBox="0 0 16 16" 
+                                         :class="{'rotate-90': openCavSubmenu }">
+                                        <path fill-rule="evenodd" 
+                                              d="M1.646 4.646a.5.5 
+                                              0 0 1 .708 0L8 
+                                              10.293l5.646-5.647a.5.5 
+                                              0 0 1 .708.708l-6 6a.5.5 
+                                              0 0 1-.708 0l-6-6a.5.5 
+                                              0 0 1 0-.708z"/>
+                                    </svg>
+                                </a>
+                                <ul class="list-unstyled ps-4 mt-2" x-show="openCavSubmenu" x-transition>
+                                    <li class="mb-1">
+                                        <a href="" 
+                                           class="d-flex align-items-center text-white text-decoration-none {{ request()->routeIs('admin.documents.cav.overview') ? 'bg-primary rounded' : '' }}" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="right" 
+                                           title="CAV Overview"
+                                           @click="isSidebarOpen = false">
+                                            <!-- Overview SVG Icon -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                                 class="bi bi-info-circle-fill me-2" viewBox="0 0 16 16" aria-label="CAV Overview Icon">
+                                                <path fill-rule="evenodd" 
+                                                      d="M8 16A8 8 0 1 0 8 
+                                                      0a8 8 0 0 0 0 16zm.93-9.412-1 
+                                                      4.705c-.07.34.029.533.304.533.194 
+                                                      0 .487-.07.686-.246l.088-.416c.041-.198.172-.246.329-.135l1.507 
+                                                      1.243c.196.162.375.392.442.658.07.266-.017.537-.237.706a.752.752 
+                                                      0 0 1-1.054-.154l-.808-1.332a.565.565 
+                                                      0 0 0-.514-.24c-.294 0-.478.215-.416.488l.67 
+                                                      3.37c.056.285.273.405.496.282l.886-.443c.207-.104.293-.303.205-.489l-1.508-4.705a.552.552 
+                                                      0 0 0-.508-.38zM8 5.5a1 1 
+                                                      0 1 1 0-2 1 1 
+                                                      0 0 1 0 2z"/>
+                                            </svg>
+                                            Overview
+                                        </a>
+                                    </li>
+                                    <li class="mb-1">
+                                        <a href="" 
+                                           class="d-flex align-items-center text-white text-decoration-none {{ request()->routeIs('admin.documents.cav.reports') ? 'bg-primary rounded' : '' }}" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="right" 
+                                           title="CAV Reports"
+                                           @click="isSidebarOpen = false">
+                                            <!-- Reports SVG Icon -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                                 class="bi bi-file-earmark-text-fill me-2" viewBox="0 0 16 16" aria-label="CAV Reports Icon">
+                                                <path d="M9.293 0H4a2 2 0 0 0-2 
+                                                         2v12a2 2 0 0 0 2 2h8a2 
+                                                         2 0 0 0 2-2V4.707A1 1 0 0 0 
+                                                         14.707 4L10 .293A1 1 0 0 0 
+                                                         9.293 0zM9.5 1v2.5h2.5L9.5 
+                                                         1zm-3 3V1.5L14.5 14H8v-4h6V2h-4v4h-4z"/>
+                                            </svg>
+                                            Reports
+                                        </a>
+                                    </li>
+                                 
+                                </ul>
+                            </div>
+                        </li>
+
+                        <!-- Outgoing Submenu -->
+                        <li class="mb-2">
+                            <div x-data="{ openOutgoingSubmenu: false }">
+                                <a href="javascript:void(0)" 
+                                   @click="openOutgoingSubmenu = !openOutgoingSubmenu" 
+                                   class="d-flex align-items-center text-white text-decoration-none">
+                                    <!-- Outgoing SVG Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                         class="bi bi-arrow-up-right-square-fill me-2" viewBox="0 0 16 16" aria-label="Outgoing Icon">
+                                        <path d="M16 2a2 2 0 0 0-2-2H2a2 
+                                                 2 0 0 0-2 2v12a2 2 0 0 0 
+                                                 2 2h12a2 2 0 0 0 2-2V2zm-6.5 
+                                                 5.5a.5.5 0 0 1 .5-.5h1a.5.5 
+                                                 0 0 1 .5.5v2.793l1.146-1.147a.5.5 
+                                                 0 1 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 
+                                                 0 1 1 .708-.708L9.5 10.793V8a.5.5 
+                                                 0 0 1 .5-.5z"/>
+                                    </svg>
+                                    Outgoing
+                                    <!-- Submenu Indicator Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                         class="bi bi-chevron-down ms-auto submenu-indicator transition-transform duration-300" 
+                                         viewBox="0 0 16 16" 
+                                         :class="{'rotate-90': openOutgoingSubmenu }">
+                                        <path fill-rule="evenodd" 
+                                              d="M1.646 4.646a.5.5 
+                                              0 0 1 .708 0L8 
+                                              10.293l5.646-5.647a.5.5 
+                                              0 0 1 .708.708l-6 6a.5.5 
+                                              0 0 1-.708 0l-6-6a.5.5 
+                                              0 0 1 0-.708z"/>
+                                    </svg>
+                                </a>
+                                <ul class="list-unstyled ps-4 mt-2" x-show="openOutgoingSubmenu" x-transition>
+                                <li class="mb-1">
+    <a href="{{ route('admin.outgoings.index') }}" 
+       class="d-flex align-items-center text-white text-decoration-none {{ request()->routeIs('admin.documents.outgoings.index') ? 'bg-primary rounded' : '' }}" 
+       data-bs-toggle="tooltip" 
+       data-bs-placement="right" 
+       title="Outgoing Overview"
+       @click="isSidebarOpen = false">
+        <!-- Overview SVG Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+             class="bi bi-info-circle-fill me-2" viewBox="0 0 16 16" aria-label="Outgoing Overview Icon">
+            <path fill-rule="evenodd" 
+                  d="M8 16A8 8 0 1 0 8 
+                  0a8 8 0 0 0 0 16zm.93-9.412-1 
+                  4.705c-.07.34.029.533.304.533.194 
+                  0 .487-.07.686-.246l.088-.416c.041-.198.172-.246.329-.135l1.507 
+                  1.243c.196.162.375.392.442.658.07.266-.017.537-.237.706a.752.752 
+                  0 0 1-1.054-.154l-.808-1.332a.565.565 
+                  0 0 0-.514-.24c-.294 0-.478.215-.416.488l.67 
+                  3.37c.056.285.273.405.496.282l.886-.443c.207-.104.293-.303.205-.489l-1.508-4.705a.552.552 
+                  0 0 0-.508-.38zM8 5.5a1 1 
+                  0 1 1 0-2 1 1 
+                  0 0 1 0 2z"/>
+        </svg>
+        Overview
+    </a>
+</li>
+
+                                    <li class="mb-1">
+                                        <a href="" 
+                                           class="d-flex align-items-center text-white text-decoration-none {{ request()->routeIs('admin.documents.outgoing.reports') ? 'bg-primary rounded' : '' }}" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="right" 
+                                           title="Outgoing Reports"
+                                           @click="isSidebarOpen = false">
+                                            <!-- Reports SVG Icon -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                                 class="bi bi-file-earmark-text-fill me-2" viewBox="0 0 16 16" aria-label="Outgoing Reports Icon">
+                                                <path d="M9.293 0H4a2 2 0 0 0-2 
+                                                         2v12a2 2 0 0 0 2 2h8a2 
+                                                         2 0 0 0 2-2V4.707A1 1 0 0 0 
+                                                         14.707 4L10 .293A1 1 0 0 0 
+                                                         9.293 0zM9.5 1v2.5h2.5L9.5 
+                                                         1zm-3 3V1.5L14.5 14H8v-4h6V2h-4v4h-4z"/>
+                                            </svg>
+                                            Reports
+                                        </a>
+                                    </li>
+                                    <li class="mb-1">
+                                        <a href="" 
+                                           class="d-flex align-items-center text-white text-decoration-none {{ request()->routeIs('admin.documents.outgoing.settings') ? 'bg-primary rounded' : '' }}" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="right" 
+                                           title="Outgoing Settings"
+                                           @click="isSidebarOpen = false">
+                                            <!-- Settings SVG Icon -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" 
+                                                 class="bi bi-sliders me-2" viewBox="0 0 16 16" aria-label="Outgoing Settings Icon">
+                                                <path fill-rule="evenodd" 
+                                                      d="M11.442 10.558a5.5 5.5 0 
+                                                           0 1-7.78 0l-1.96 
+                                                           1.96a.5.5 0 0 1-.708-.708l1.96-1.96a5.5 
+                                                           5.5 0 0 1 7.78 0l1.96-1.96a.5.5 
+                                                           0 1 1 .708.708l-1.96 
+                                                           1.96z"/>
+                                            </svg>
+                                            Settings
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+        @endrole
+
         <!-- Manage Users Link (Visible Only to Admins) -->
         @role('admin')
-        <li class="mb-2">
-            <a href="{{ route('manage.users.index') }}" 
-               class="d-flex align-items-center text-white text-decoration-none" 
-               data-bs-toggle="tooltip" 
-               data-bs-placement="right" 
-               title="Manage Users"
-               @click="isSidebarOpen = false">
-                <!-- Manage Users SVG Icon -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
-                     class="bi bi-people-fill me-2" viewBox="0 0 16 16" aria-label="Manage Users Icon">
-                    <path d="M5.216 14A2.238 2.238 
-                    0 0 1 3 12.28c0-.75.333-1.47.919-1.936C4.446 
-                    9.073 5.111 8 7 8s2.554 1.073 3.081 
-                    2.344A2.238 2.238 0 0 1 13 12.28a2.238 
-                    2.238 0 0 1-2.216 1z"/>
-                    <path fill-rule="evenodd" 
-                          d="M10.5 6a2 2 0 
-                          1 1-4 0 2 2 0 
-                          0 1 4 0z"/>
-                </svg>
-                Manage Users
-            </a>
-        </li>
+            <li class="mb-2">
+                <a href="{{ route('admin.manage.users.index') }}" 
+                   class="d-flex align-items-center text-white text-decoration-none" 
+                   data-bs-toggle="tooltip" 
+                   data-bs-placement="right" 
+                   title="Manage Users"
+                   @click="isSidebarOpen = false">
+                    <!-- Manage Users SVG Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                         class="bi bi-people-fill me-2" viewBox="0 0 16 16" aria-label="Manage Users Icon">
+                        <path d="M5.216 14A2.238 2.238 
+                        0 0 1 3 12.28c0-.75.333-1.47.919-1.936C4.446 
+                        9.073 5.111 8 7 8s2.554 1.073 3.081 
+                        2.344A2.238 2.238 0 0 1 13 12.28a2.238 
+                        2.238 0 0 1-2.216 1z"/>
+                        <path fill-rule="evenodd" 
+                              d="M10.5 6a2 2 0 
+                              1 1-4 0 2 2 0 
+                              0 1 4 0z"/>
+                    </svg>
+                    Manage Users
+                </a>
+            </li>
         @endrole
 
         <!-- Settings Link with Submenu -->
@@ -173,6 +469,9 @@
                         10.5a2.5 2.5 
                         0 1 0 0-5 2.5 2.5 
                         0 0 0 0 5z"/>
+                        <path d="M8 5.5a1 1 
+                        0 1 1 0-2 1 1 
+                        0 0 1 0 2z"/>
                     </svg>
                     Settings
                     <!-- Submenu Indicator Icon -->
@@ -202,7 +501,8 @@
                                  class="bi bi-person-fill me-2" viewBox="0 0 16 16" aria-label="Profile Icon">
                                 <path d="M3 14s-1 0-1-1 1-4 
                                 7-4 7 3 7 4-1 1-1 1H3zm5-6a3 3 
-                                0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                                0 1 1 0 6 3 3 
+                                0 0 1 0-6z"/>
                             </svg>
                             Profile
                         </a>
@@ -227,10 +527,11 @@
                           0 0 1 0 1H4.707l1.939 1.646a.5.5 
                           0 1 1-.708.708l-2.5-2.5a.499.499 
                           0 0 1 0-.707l2.5-2.5a.5.5 
-                          0 0 1 .708 0z"/>
+                          0 1 1 .708-.708L9.5 10.793V8a.5.5 
+                          0 0 1 .5-.5z"/>
                     <path fill-rule="evenodd"
                           d="M13 8a5 5 
-                          0 1 1-8-4.546V2.5a.5.5 
+                          0 1 0-8-4.546V2.5a.5.5 
                           0 0 1 1 0v.954A4 4 0 1 0 
                           4 8a5 5 0 0 1 9 0z"/>
                 </svg>
@@ -239,3 +540,6 @@
         </form>
     </div>
 </div>
+<script>
+    console.log('Hello World');
+</script>

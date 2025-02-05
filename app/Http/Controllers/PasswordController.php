@@ -26,15 +26,24 @@ class PasswordController extends Controller
      */
     public function change(Request $request)
     {
+        // Validate the incoming request data
         $request->validate([
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        // Get the authenticated user
         $user = Auth::user();
+
+        // Update the user's password and mark email as verified
         $user->password = Hash::make($request->password);
         $user->password_changed_at = now();
+        $user->email_verified_at = now(); // Mark email as verified
         $user->save();
 
+        // Optionally, you can log the user out and require re-login
+        // Auth::logout();
+
+        // Redirect with a success message
         return redirect()->route('dashboard')->with('success', 'Password changed successfully.');
     }
 }

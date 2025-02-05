@@ -15,6 +15,42 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run()
     {
+        $roles = [
+            'admin',
+            'HR',
+            'Records',
+            'RegionalDirector',
+            'Supervisor',
+            'Technical',
+            'Unifast',
+            'Accounting',
+        ];
+
+        // Define permissions for SoMasterListController
+        $permissions = [
+            'so_master_lists.view',
+            'so_master_lists.create',
+            'so_master_lists.edit',
+            'so_master_lists.delete',
+        ];
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
+
+        // Create roles and assign existing permissions
+        foreach ($roles as $roleName) {
+            $role = Role::firstOrCreate(['name' => $roleName]);
+
+            // Assign permissions based on role
+            // Assuming 'admin' has all permissions
+            if ($roleName === 'admin') {
+                $role->syncPermissions($permissions);
+            }
+
+            // 'Records' role has specific permissions
+            if ($roleName === 'Records') {
+                $role->syncPermissions(['so_master_lists.view', 'so_master_lists.create', 'so_master_lists.edit', 'so_master_lists.delete']);
+            }
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
@@ -31,4 +67,5 @@ class RolesAndPermissionsSeeder extends Seeder
         $userRole = Role::create(['name' => 'user']);
         // Assign permissions to user role if necessary
     }
+}
 }
