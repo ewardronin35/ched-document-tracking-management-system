@@ -176,7 +176,7 @@ return [
          */
         App\Providers\AppServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class, // Uncomment if used
+        App\Providers\BroadcastServiceProvider::class, // Uncomment if used
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         

@@ -72,12 +72,11 @@
 
         /* Style the loading image if you'd like a fixed size */
         .loading-image {
-            width: 200px;
+            width: 100px;
             height: auto; /* Keep aspect ratio, or set a fixed height if needed */
         }
 
-        /* Optional: Spinning animation for the logo */
-        /* Uncomment if you want the logo to spin
+      
         @keyframes spin {
             0%   { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -90,6 +89,8 @@
 </head>
 
 <body class="font-sans antialiased">
+@include('layouts.partials.toastr')
+
     <!-- Loading Overlay with an Image -->
     <div id="loading-overlay" class="spinner-overlay">
         <img
@@ -99,12 +100,20 @@
             aria-label="Loading Overlay"
             aria-busy="true"
         />
+       
     </div>
 
-    <x-banner />
 
     <!-- Alpine.js Shared State Wrapper -->
     <div x-data="{ isSidebarOpen: false, isResponsiveMenuOpen: false }" class="d-flex">
+        <!-- 1) The Overlay (mobile only) -->
+        <div 
+            x-show="isSidebarOpen" 
+            @click="isSidebarOpen = false" 
+            class="fixed inset-0 bg-black opacity-50 z-40" 
+            x-transition
+        ></div>
+
         <!-- Sidebar -->
         @auth
             @include('layouts.sidebar')
@@ -132,10 +141,10 @@
     @stack('modals')
 
     <!-- jQuery (Required for Bootstrap JS and DataTables) -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
     <!-- Bootstrap JS Bundle (Includes Popper) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Blade Stack for Additional Scripts -->
     @stack('scripts')
@@ -149,6 +158,7 @@
             tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
         });
     </script>
+
 
     <!-- Universal Loading Overlay Control with Fade and Delay -->
     <script>
@@ -165,9 +175,9 @@
                 if (overlay) {
                     overlay.classList.add('hidden'); // triggers CSS transition
                     // After the transition finishes (~0.6s), we can fully hide or remove the overlay if we want
-                    setTimeout(() => overlay.style.display = 'none', 700);
+                    setTimeout(() => overlay.style.display = 'none', 500);
                 }
-            }, 800);
+            }, 500);
         });
 
         // jQuery-based: Show overlay on AJAX start, hide on AJAX stop
@@ -179,7 +189,7 @@
             $('#loading-overlay').addClass('hidden');
             setTimeout(function() {
                 $('#loading-overlay').hide();
-            }, 700);
+            }, 500);
         });
 
         // Livewire-based: Show overlay on loading start, hide on loading stop
@@ -195,11 +205,48 @@
             overlay.classList.add('hidden');
             setTimeout(function() {
                 overlay.style.display = 'none';
-            }, 700);
+            }, 500);
         });
     </script>
 
+
     <!-- Include Toastr Partial (if applicable) -->
     @include('layouts.partials.toastr')
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+    @auth
+        let userId = {{ auth()->user()->id }};
+        console.log('Listening for notifications for user:', userId);
+
+        if (window.Echo) {
+            window.Echo.private('App.Models.User.1')
+    .listen('.document.status.updated', function (notification) {
+        console.log('Notification received:', notification);
+        updateNotificationUI(notification);
+    });
+
+        } else {
+            console.error('Echo is not defined. Check your app.js.');
+        }
+        window.Echo.connector.pusher.bind_global(function(eventName, data) {
+    console.log("Received event:", eventName, data);
+});
+
+        function updateNotificationUI(notification) {
+            console.log('Displaying Toastr notification:', notification);
+
+            toastr.options = {
+                "closeButton": true,
+                "progressBar": true,
+                "positionClass": "toast-top-right",
+                "timeOut": "5000"
+            };
+            toastr.success(notification.message, 'New Notification');
+        }
+    @endauth
+});
+
+</script>
+
 </body>
 </html>

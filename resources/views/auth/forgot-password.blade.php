@@ -1,55 +1,62 @@
 <x-guest-layout>
     <!-- Main Container with Background Image -->
-    <div class="relative min-h-screen flex items-center justify-center bg-cover bg-center" style="background-image: url('{{ asset('images/CHED.jpg') }}');">
-        
-        <!-- Overlay to Darken Background for Readability -->
-        <div class="absolute inset-0 bg-black opacity-60"></div>
+    <div class="min-vh-100 d-flex align-items-center justify-content-center position-relative bg-dark">
+        <!-- Background Image -->
+        <div class="position-absolute top-0 start-0 w-100 h-100 bg-cover bg-center" 
+     style="background-image: url('{{ asset('images/CHED.jpg') }}'); background-repeat: no-repeat; background-size: cover; opacity: 0.6;"></div>
 
         <!-- Spinner (Hidden by Default) -->
-        <div id="loading-spinner" class="hidden fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 z-50">
-            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500"></div>
+        <div id="loading-spinner" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-75">
+            <div class="spinner-border text-primary" style="width: 4rem; height: 4rem;" role="status"></div>
         </div>
 
         <!-- Authentication Card -->
-        <div class="relative z-10 w-full max-w-md p-8 bg-white rounded-xl shadow-lg border border-gray-300">
-            <div class="flex flex-col items-center">
-                <img src="{{ asset('images/Logo.png') }}" alt="Authentication Card Logo" class="h-20 w-auto">
-                <h1 class="text-center text-3xl font-bold text-gray-800 mt-4">Forgot Password</h1>
+        <div class="card shadow-lg border-0 rounded-lg p-4 bg-light position-relative z-2" style="max-width: 400px; width: 100%;">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <img src="{{ asset('images/Logo.png') }}" alt="Authentication Card Logo" class="img-fluid mb-3" style="max-height: 80px;">
+                    <h1 class="h4 fw-bold text-dark">Forgot Password</h1>
+                </div>
+
+                <p class="text-muted small">
+                    {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
+                </p>
+
+                <!-- Status Message -->
+                @if (session('status'))
+                    <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                        {{ session('status') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                <!-- Validation Errors -->
+                <x-validation-errors class="alert alert-danger mt-3" />
+
+                <!-- Forgot Password Form -->
+                <form id="forgot-password-form" method="POST" action="{{ route('password.email') }}">
+                    @csrf
+                    <!-- Email Input -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-bold">{{ __('Email') }}</label>
+                        <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="username" 
+                               class="form-control" placeholder="Enter your email">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            {{ __('Email Password Reset Link') }}
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <div class="mt-4 text-sm text-gray-600">
-                {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
-            </div>
-
-            <!-- Status Message -->
-            @if (session('status'))
-                <div class="mt-4 font-medium text-sm text-green-600">
-                    {{ session('status') }}
-                </div>
-            @endif
-
-            <!-- Validation Errors -->
-            <x-validation-errors class="mt-4 text-red-600" />
-
-            <!-- Forgot Password Form -->
-            <form id="forgot-password-form" method="POST" action="{{ route('password.email') }}" class="space-y-4 mt-6">
-                @csrf
-
-                <!-- Email Input -->
-                <div>
-                    <x-label for="email" value="{{ __('Email') }}" class="text-gray-800" />
-                    <x-input id="email" class="block mt-1 w-full px-3 py-2 bg-white text-gray-800 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-                </div>
-
-                <!-- Submit Button -->
-                <div class="flex items-center justify-end">
-                    <x-button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                        {{ __('Email Password Reset Link') }}
-                    </x-button>
-                </div>
-            </form>
         </div>
     </div>
+
+    <!-- Bootstrap CSS & JS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Toastr CSS and JS (For Notifications) -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
@@ -99,7 +106,7 @@
 
         // Show Spinner on Form Submission
         document.getElementById('forgot-password-form').addEventListener('submit', function () {
-            document.getElementById('loading-spinner').classList.remove('hidden');
+            document.getElementById('loading-spinner').classList.remove('d-none');
         });
     </script>
 </x-guest-layout>

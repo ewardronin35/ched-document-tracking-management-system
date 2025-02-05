@@ -32,6 +32,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'so_master_lists.create',
             'so_master_lists.edit',
             'so_master_lists.delete',
+            'cav.viewAny',
+            'cav.view',
+            'cav.create',
+            'cav.edit',
+            'cav.delete',
+            'cav.import',
+            'cav.export',
         ];
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
@@ -61,8 +68,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Add more permissions as needed
 
         // create roles and assign existing permissions
-        $adminRole = Role::create(['name' => 'admin']);
-        $adminRole->givePermissionTo(['manage users', 'import users', 'generate passwords']);
+       
 
         $userRole = Role::create(['name' => 'user']);
         // Assign permissions to user role if necessary

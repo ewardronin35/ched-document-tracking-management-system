@@ -1,6 +1,3 @@
-/* resources/css/sidebar.css */
-
-/* Sidebar Styles */
 .sidebar {
     width: 250px;
     height: 100vh;
@@ -12,215 +9,59 @@
     box-shadow: rgba(0, 0, 0, 0.1) 2px 0px 5px;
     display: flex;
     flex-direction: column; 
+    z-index: 50;  /* Ensure sidebar appears above overlay */
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
 }
 
-/* Main Content */
+.sidebar.translate-x-0 {
+    transform: translateX(0);
+}
+
 .main-content {
-    margin-left: 250px; /* Width of the sidebar */
+    margin-left: 0;
     transition: margin-left 0.3s ease;
-    width: 100%;
 }
 
-/* Responsive Styles */
-@media (max-width: 768px) {
+@media (min-width: 768px) {
     .sidebar {
-        transform: translateX(-100%); /* Hide sidebar on small screens */
-        transition: transform 0.3s ease;
-    }
-
-    .sidebar.show {
-        transform: translateX(0); /* Show sidebar when active */
+        transform: translateX(0);
     }
 
     .main-content {
-        margin-left: 0;
+        margin-left: 16rem; /* Adjust this to match your sidebar width */
     }
 }
 
-/* Navigation Links */
+/* Sidebar Link Styles */
 .sidebar a {
+    color: #fff;
+    text-decoration: none;
+    padding: 12px 10px; /* Adjusted for spacing */
     display: flex;
     align-items: center;
-    color: #fff; /* White text for contrast */
-    text-decoration: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    font-weight: 500;
-    transition: background-color 0.3s, color 0.3s;
+    border-radius: 4px;
+    font-size: 1.1rem; /* Increased font size for better visibility */
+    font-weight: 500; /* Slightly bold for emphasis */
+    transition: background-color 0.3s ease, font-size 0.3s ease;
 }
 
 .sidebar a:hover {
-    background-color: #2563EB; /* Slightly darker blue on hover */
-    color: #fff;
+    background-color: #DA042A;
 }
 
 .sidebar a.active {
-    background-color: #1E40AF; /* Darker blue for active state */
-    color: #fff;
+    background-color: #DA042A;
+    color: #FEE71B;
 }
 
-/* Icon Styling */
 .sidebar svg {
-    margin-right: 10px; /* Space between icon and text */
-    font-size: 1.2rem;
-    flex-shrink: 0; /* Prevent icon from shrinking */
+    margin-right: 10px; /* Ensure adequate spacing between icons and text */
 }
 
-/* Logo Styling */
-.sidebar .p-4 img {
-    /* Ensure logos are uniformly sized */
-    width: 40px;
-    height: 40px;
-    object-fit: contain; /* Maintain aspect ratio */
-}
-
-/* Submenu Styling */
-.sidebar .collapse a {
-    padding-left: 30px; /* Indent submenu links */
-    background-color: #4C9AFF; /* Slightly lighter blue for submenus */
-}
-
-.sidebar .collapse a.active {
-    background-color: #1E40AF; /* Same as parent active state */
-}
-
-/* Submenu Indicator Icon Rotation */
-.sidebar .dropdown-toggle .submenu-indicator {
-    transition: transform 0.3s ease;
-}
-
-.sidebar .dropdown-toggle.collapsed .submenu-indicator {
-    transform: rotate(-90deg);
-}
-
-.sidebar .dropdown-toggle:not(.collapsed) .submenu-indicator {
-    transform: rotate(0deg);
-}
-
-/* Logout Button Styling */
-.sidebar .mt-auto .btn-danger {
-    background-color: #dc3545;
-    border-color: #dc3545;
-    font-weight: 500;
-    transition: background-color 0.3s, border-color 0.3s;
-}
-
-.sidebar .mt-auto .btn-danger:hover {
-    background-color: #c82333;
-    border-color: #bd2130;
-}
-
-.sidebar .mt-auto .btn-danger svg {
-    margin-right: 8px; /* Adjust space between icon and text */
-}
-
-/* Tooltip Styling (Optional) */
-.tooltip-inner {
-    background-color: #343a40;
-    color: #fff;
-    border-radius: 4px;
-    padding: 5px 10px;
-    font-size: 0.875rem;
-}
-
-.tooltip.bs-tooltip-right .arrow::before {
-    border-right-color: #343a40;
-}
-
-/* Collapse Behavior */
-.collapse {
-    display: none; /* Default hidden */
-
-    transition: height 0.3s ease, visibility 0.3s ease;
-}
-
-.collapse.show {
-    display: block !important;
-}
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-        z-index: 50;
-    }
-    .sidebar.show {
-        transform: translateX(0);
-    }
-    .main-content {
-        margin-left: 0;
-    }
-}
-
-
-/* When sidebar is shown on small screens */
-.sidebar.show {
-    transform: translateX(0); /* Slide sidebar into view */
-}
-/* Navigation Links */
-.menu-item > a {
-    display: flex;
-    align-items: center;
-    color: #fff; /* White text for contrast */
-    text-decoration: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    font-weight: 500;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-.menu-item > a:hover {
-    background-color: #2563EB; /* Slightly darker blue on hover */
-    color: #fff;
-}
-
-.menu-item > a.active {
-    background-color: #1E40AF; /* Darker blue for active state */
-    color: #fff;
-}
-
-/* Submenu Styling */
-.submenu {
-    display: none; /* Hidden by default */
-    flex-direction: column;
-    padding-left: 20px;
-}
-
-.submenu-item {
-    color: #fff;
-    text-decoration: none;
-    padding: 8px 0;
-    transition: background-color 0.3s;
-}
-
-.submenu-item:hover {
-    background-color: #2563EB;
-}
-
-.submenu.show {
-    display: flex; /* Show when active */
-}
-
-/* Submenu Indicator Icon Rotation */
-.submenu-indicator {
-    transition: transform 0.3s ease;
-}
-
-.transform.rotate-90 {
-    transform: rotate(90deg);
-}
-
-/* Logout Button Styling */
-.btn-danger {
-    background-color: #dc3545;
-    border: none;
-    color: #fff;
+/* Logout Button Style */
+.sidebar button {
+    font-size: 1.1rem;
+    font-weight: 600; /* Bold for emphasis */
     padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.btn-danger:hover {
-    background-color: #c82333;
 }

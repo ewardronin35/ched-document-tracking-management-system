@@ -11,6 +11,8 @@ class Programs extends Model
 {
     use HasFactory;
 
+    protected $table = 'programs';
+
     protected $fillable = ['name', 'psced_code'];
 
     public function majors()

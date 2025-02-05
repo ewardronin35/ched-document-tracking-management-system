@@ -7,24 +7,27 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\ProgramsImport;
+
 class ProgramsController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    
     public function index()
     {
-        $programs = Programs::paginate(10);
-        return view('admin.programs.index', compact('programs'));
+        // Retrieve all programs for dropdown options
+        $programOptions = Programs::all(); 
+        return view('admin.programs.index', compact('programOptions'));
     }
 
     /**
-     * Show the form for creating a new program.
+     * Provide data for Handsontable via AJAX.
      */
-    public function create()
+    public function indexData()
     {
-        return view('admin.programs.create');
+        // Fetch all programs without pagination for Handsontable
+        $programs = Programs::all();
+        return response()->json($programs);
     }
 
     /**
@@ -39,23 +42,7 @@ class ProgramsController extends Controller
 
         Programs::create($request->only('name', 'psced_code'));
 
-        return redirect()->route('admin.programs.index')->with('success', 'Program created successfully.');
-    }
-
-    /**
-     * Display the specified program.
-     */
-    public function show(Programs $program)
-    {
-        return view('admin.programs.show', compact('program'));
-    }
-
-    /**
-     * Show the form for editing the specified program.
-     */
-    public function edit(Programs $program)
-    {
-        return view('admin.programs.edit', compact('program'));
+        return response()->json(['success' => 'Program created successfully.', 'data' => Programs::all()]);
     }
 
     /**
@@ -70,7 +57,7 @@ class ProgramsController extends Controller
 
         $program->update($request->only('name', 'psced_code'));
 
-        return redirect()->route('admin.programs.index')->with('success', 'Program updated successfully.');
+        return response()->json(['success' => 'Program updated successfully.']);
     }
 
     /**
@@ -79,7 +66,7 @@ class ProgramsController extends Controller
     public function destroy(Programs $program)
     {
         $program->delete();
-        return redirect()->route('admin.programs.index')->with('success', 'Program deleted successfully.');
+        return response()->json(['success' => 'Program deleted successfully.']);
     }
 
     /**
@@ -112,6 +99,6 @@ class ProgramsController extends Controller
 
         Excel::import(new ProgramsImport, $request->file('csv_file'));
 
-        return redirect()->route('admin.programs.index')->with('success', 'Programs imported successfully!');
+        return response()->json(['success' => 'Programs imported successfully.', 'data' => Programs::all()]);
     }
 }

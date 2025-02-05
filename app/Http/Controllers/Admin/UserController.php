@@ -17,7 +17,9 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Response;
 use App\Http\Controllers\Controller;
+use Spatie\Permission\Models\Permission;
 
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -28,7 +30,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with('roles')->paginate(10);
+        $users = User::with(['roles', 'permissions'])->paginate(10);
         $roles = Role::all();
         return view('admin.manage-users.index', compact('users', 'roles'));
     }
@@ -256,5 +258,66 @@ class UserController extends Controller
         }
 
         abort(404);
+    }
+    public function getPermissions(User $user)
+    {
+        // Ensure the authenticated user has permission to view permissions
+        $this->authorize('view permissions', $user);
+
+        $permissions = Permission::all();
+        $userPermissions = $user->permissions->pluck('name')->toArray();
+
+        return response()->json([
+            'permissions' => $permissions,
+            'user_permissions' => $userPermissions,
+        ]);
+    }
+
+    /**
+     * Update user permissions.
+     */
+    public function updatePermissions(Request $request, User $user)
+    {
+        try {
+            // Authorization
+            $this->authorize('update permissions', $user);
+    
+            // Validation
+            $validator = Validator::make($request->all(), [
+                'permissions' => 'array',
+                'permissions.*' => 'exists:permissions,id',
+            ]);
+    
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid permissions provided.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+    
+            // Retrieve Permission models
+            $permissions = Permission::whereIn('id', $request->permissions)->get();
+    
+            // Sync permissions using Permission models
+            $user->syncPermissions($permissions);
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Permissions updated successfully.',
+            ]);
+        } catch (\Spatie\Permission\Exceptions\UnauthorizedException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to perform this action.',
+            ], 403);
+        } catch (\Exception $e) {
+            Log::error('Error updating permissions for user ID ' . $user->id . ': ' . $e->getMessage());
+    
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred while updating permissions.',
+            ], 500);
+        }
     }
 }

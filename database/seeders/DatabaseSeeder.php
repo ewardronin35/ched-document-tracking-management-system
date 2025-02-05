@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
         $this->call(RolesAndPermissionsSeeder::class);
         $this->call(RolesAndPermissionsSeeders::class);
         $this->call(OutgoingSeeder::class);
+        $this->call(PermissionSeed::class);
+        $this->call(CavPermissionSeeder::class);
+        $this->call(RecordRolePermissionSeeder::class);
 
 
         User::factory()->withPersonalTeam()->create([

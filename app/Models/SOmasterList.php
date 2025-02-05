@@ -35,6 +35,7 @@ class SoMasterList extends Model
         'semester1_end',
         'semester2_start',
         'semester2_end',
+        'psced_code',  // IMPORTANT: ensure this is included if you use PSCED code
     ];
 
     // Relationships
@@ -61,4 +62,8 @@ class SoMasterList extends Model
     {
         return $this->belongsTo(Majors::class);
     }
+    public function hei()
+{
+    return $this->belongsTo(HEI::class, 'hei_id');
+}
 }

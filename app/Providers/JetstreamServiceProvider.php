@@ -36,6 +36,8 @@ class JetstreamServiceProvider extends ServiceProvider
         Jetstream::removeTeamMembersUsing(RemoveTeamMember::class);
         Jetstream::deleteTeamsUsing(DeleteTeam::class);
         Jetstream::deleteUsersUsing(DeleteUser::class);
+        Jetstream::ignoreRoutes(); // Tells Jetstream not to load default routes
+
     }
 
     /**

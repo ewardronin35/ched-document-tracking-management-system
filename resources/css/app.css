@@ -1,7 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-@import './sidebars.css';
+@import 'handsontable/dist/handsontable.full.min.css';
+@import 'bootstrap';
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 [x-cloak] {
     display: none;

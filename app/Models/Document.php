@@ -15,16 +15,18 @@ class Document extends Model
      * @var array
      */
     protected $fillable = [
-        'document_id',
         'tracking_number',
-
         'email',
         'full_name',
         'document_type',
         'file_path',
         'status',
         'status_details',
+        'approval_status',
+        'phone_number',
+        'route_to',
     ];
+    
 
     /**
      * The attributes that should be cast to native types.
@@ -38,4 +40,9 @@ class Document extends Model
     {
         return $this->belongsTo(User::class, 'email', 'email');
     }
+    public function routedUser()
+    {
+        return $this->belongsTo(User::class, 'routed_to', 'id'); // Ensure 'id' is used properly
+    }
+    
 }

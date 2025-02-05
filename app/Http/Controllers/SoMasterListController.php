@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\SoMasterList;
 use App\Models\Programs;
 use App\Models\Majors;
+use App\Models\HEI;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
@@ -31,20 +32,36 @@ class SoMasterListController extends Controller
      * Display a listing of the students.
      */
     public function index()
-    {
-        $soMasterLists = SoMasterList::with(['program', 'major'])->get();
-        $programs = Programs::all(); // Fetch all programs
-        $majors = Majors::all();     // Fetch all majors
-        $prefix = $this->getCurrentPrefix();
-    
-        if ($prefix === 'admin') {
-            return view('admin.SoMasterList.index', compact('soMasterLists', 'programs', 'majors'));
-        } elseif ($prefix === 'records') {
-            return view('records.SoMasterList.index', compact('soMasterLists', 'programs', 'majors'));
-        } else {
-            abort(403, 'Unauthorized access.');
-        }
+{
+    $soMasterLists = SoMasterList::with(['program', 'major'])->get();
+    $heis = HEI::all();
+    $heiOptions = HEI::pluck('uii', 'HEIs')->toArray(); // Key: HEI Name, Value: UII
+
+    // Transform the date fields to 'YYYY-MM-DD' for each record
+
+
+    $programs = Programs::all(); 
+    $majors = Majors::all();     
+
+    // Create options arrays for dropdowns
+    $programOptions = $programs->pluck('name', 'id')->toArray();
+    $majorOptions = $majors->pluck('name', 'id')->toArray();
+    $programOptions = $programs->mapWithKeys(function($p) {
+        return [$p->id => [
+            'name' => $p->name,
+            'psced_code' => $p->psced_code
+        ]];
+    })->toArray();
+    $prefix = $this->getCurrentPrefix();
+    if ($prefix === 'admin') {
+        return view('admin.SoMasterList.index', compact('soMasterLists', 'programs', 'majors', 'programOptions', 'majorOptions', 'heiOptions'));
+    } elseif ($prefix === 'records') {
+        return view('records.SoMasterList.index', compact('soMasterLists', 'programs', 'majors', 'programOptions', 'majorOptions'));
+    } else {
+        abort(403, 'Unauthorized access.');
     }
+}
+
 
     /**
      * Show the form for creating a new student.
@@ -148,43 +165,43 @@ class SoMasterListController extends Controller
     public function update(Request $request, SoMasterList $soMasterList)
     {
         $this->authorize('update', $soMasterList);
-
-        // Validate input
-        $request->validate([
-            'hei_name' => 'required|string|max:255',
-            'hei_uii' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'first_name' => 'required|string|max:255',
-            'middle_name' => 'nullable|string|max:255',
-            'extension_name' => 'nullable|string|max:255',
-            'sex' => 'required|in:Male,Female,Other',
-            'program_id' => 'required|exists:programs,id',
-            'major_id' => 'required|exists:majors,id',
-            'started' => 'required|date',
-            'academic_year' => 'required|string|max:50',
-            'ended' => 'nullable|date',
-            'date_of_application' => 'required|date',
-            'date_of_issuance' => 'nullable|date',
-            'registrar' => 'nullable|string|max:255',
-            'govt_permit_reco' => 'nullable|string|max:255',
-            'total' => 'required|integer',
-            'semester' => 'required|integer',
-            'date_of_graduation' => 'nullable|date',
-            'semester1_start' => 'nullable|date',
-            'semester1_end' => 'nullable|date',
-            'semester2_start' => 'nullable|date',
-            'semester2_end' => 'nullable|date',
+    
+        // Validate input with 'sometimes' rules for partial updates
+        $validatedData = $request->validate([
+            'hei_name'             => 'sometimes|required|string|max:255',
+            'hei_uii'              => 'sometimes|required|string|max:255',
+            'last_name'            => 'sometimes|required|string|max:255',
+            'first_name'           => 'sometimes|required|string|max:255',
+            'middle_name'          => 'nullable|string|max:255',
+            'extension_name'       => 'nullable|string|max:255',
+            'sex'                  => 'sometimes|required|in:Male,Female,Other',
+            'program_id'           => 'sometimes|required|exists:programs,id',
+            'major_id'             => 'sometimes|required|exists:majors,id',
+            'started'              => 'sometimes|required|date',
+            'academic_year'        => 'sometimes|required|string|max:50',
+            'ended'                => 'nullable|date',
+            'date_of_application'  => 'sometimes|required|date',
+            'date_of_issuance'     => 'nullable|date',
+            'registrar'            => 'nullable|string|max:255',
+            'govt_permit_reco'     => 'nullable|string|max:255',
+            'total'                => 'sometimes|required|integer',
+            'semester'             => 'sometimes|required|integer',
+            'date_of_graduation'   => 'nullable|date',
+            'semester1_start'      => 'nullable|date',
+            'semester1_end'        => 'nullable|date',
+            'semester2_start'      => 'nullable|date',
+            'semester2_end'        => 'nullable|date',
         ]);
-
-        // Update student
-        $soMasterList->update($request->all());
-
-        // Redirect based on prefix
+    
+        // Update the record with validated data
+        $soMasterList->update($validatedData);
+    
         $prefix = $this->getCurrentPrefix();
-
+    
         return redirect()->route("{$prefix}.so_master_lists.index")
                          ->with('success', 'Student updated successfully.');
     }
+    
 
     /**
      * Remove the specified student from storage.
@@ -202,20 +219,43 @@ class SoMasterListController extends Controller
                          ->with('success', 'Student deleted successfully.');
     }
     public function updateInline(Request $request, SoMasterList $soMasterList)
-{
-    $validator = Validator::make($request->all(), [
-        'column' => 'required|string',
-        'value' => 'required',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json(['error' => $validator->errors()], 422);
+    {
+        $validator = Validator::make($request->all(), [
+            'hei_name'             => 'sometimes|required|string|max:255',
+            'hei_uii'              => 'sometimes|required|string|max:255',
+            'last_name'            => 'sometimes|required|string|max:255',
+            'first_name'           => 'sometimes|required|string|max:255',
+            'middle_name'          => 'nullable|string|max:255',
+            'extension_name'       => 'nullable|string|max:255',
+            'sex'                  => 'sometimes|required|in:Male,Female,Other',
+            'program_id'           => 'sometimes|required|exists:programs,id',
+            'major_id'             => 'sometimes|required|exists:majors,id',
+            'started'              => 'sometimes|required|date',
+            'academic_year'        => 'sometimes|required|string|max:50',
+            'ended'                => 'nullable|date',
+            'date_of_application'  => 'sometimes|required|date',
+            'date_of_issuance'     => 'nullable|date',
+            'registrar'            => 'nullable|string|max:255',
+            'govt_permit_reco'     => 'nullable|string|max:255',
+            'total'                => 'sometimes|required|integer',
+            'semester'             => 'sometimes|required|integer',
+            'date_of_graduation'   => 'nullable|date',
+            'semester1_start'      => 'nullable|date',
+            'semester1_end'        => 'nullable|date',
+            'semester2_start'      => 'nullable|date',
+            'semester2_end'        => 'nullable|date',
+            'psced_code'           => 'sometimes|nullable|string|max:50',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+    
+        $soMasterList->update($validator->validated());
+    
+        return response()->json(['success' => 'Data updated successfully.'], 200);
     }
-
-    $soMasterList->update([$request->column => $request->value]);
-
-    return response()->json(['success' => 'Data updated successfully.']);
-}
+    
 
 public function importCsv(Request $request)
 {
@@ -248,56 +288,51 @@ public function importMajors(Request $request)
 
     return redirect()->back()->with('success', 'Majors imported successfully!');
 }
-public function uploadGovtPermit(Request $request, SoMasterList $soMasterList)
-{
-    $this->authorize('update', $soMasterList);
-
-    // Validate the uploaded file
-    $validatedData = $request->validate([
-        'govt_permit_file' => 'required|mimes:pdf,docx|max:2048', // Adjust max size as needed
-    ]);
-
-    if ($request->hasFile('govt_permit_file')) {
-        // Delete old file if exists
-        if ($soMasterList->govt_permit_reco) {
-            Storage::disk('public')->delete($soMasterList->govt_permit_reco);
-        }
-
-        // Store the new file
-        $filePath = $request->file('govt_permit_file')->store('govt_permit_reco', 'public');
-
-        // Update the model
-        $soMasterList->govt_permit_reco = $filePath;
-        $soMasterList->save();
-    }
-
-    return response()->json(['success' => 'Government Permit Recommendation uploaded successfully.']);
-}
 public function getData(Request $request)
 {
-    // Build the base query (with relationships if you want to show them)
-    $query = SoMasterList::with(['program', 'major']); 
-    // Or ->select(...) if you only want specific columns
+    $query = SoMasterList::with(['program', 'major']);
 
-    // Let Yajra handle the request and produce a DataTable JSON
     return DataTables::of($query)
-        // Optionally modify or add columns
-        ->addColumn('program_name', function ($row) {
+        // Convert relevant date columns to 'YYYY-MM-DD'
+        ->editColumn('started', function ($row) {
+            return $row->started ? \Carbon\Carbon::parse($row->started)->format('Y-m-d') : null;
+        })
+        ->editColumn('ended', function ($row) {
+            return $row->ended ? \Carbon\Carbon::parse($row->ended)->format('Y-m-d') : null;
+        })
+        ->editColumn('date_of_application', function ($row) {
+            return $row->date_of_application ? \Carbon\Carbon::parse($row->date_of_application)->format('Y-m-d') : null;
+        })
+        ->editColumn('date_of_issuance', function ($row) {
+            return $row->date_of_issuance ? \Carbon\Carbon::parse($row->date_of_issuance)->format('Y-m-d') : null;
+        })
+        ->editColumn('date_of_graduation', function ($row) {
+            return $row->date_of_graduation ? \Carbon\Carbon::parse($row->date_of_graduation)->format('Y-m-d') : null;
+        })
+
+        // Replace program_id and major_id with their names for display
+        
+        
+        ->editColumn('program_id', function ($row) {
             return $row->program ? $row->program->name : '';
         })
-        ->addColumn('major_name', function ($row) {
+        ->editColumn('major_id', function ($row) {
             return $row->major ? $row->major->name : '';
         })
+
+        ->addColumn('psced_code', function ($row) {
+            return $row->psced_code ?? '';
+        })
         ->addColumn('actions', function ($row) {
-            // Example: return HTML for edit/delete buttons
-            return sprintf('
-                <a href="%s" class="btn btn-sm btn-warning">Edit</a>
-                <button class="btn btn-sm btn-danger delete-btn" data-id="%d">Delete</button>',
+            return sprintf(
+                '<a href="%s" class="btn btn-sm btn-warning">Edit</a>
+                 <button class="btn btn-sm btn-danger delete-btn" data-id="%d">Delete</button>',
                 route('admin.so_master_lists.edit', $row->id),
                 $row->id
             );
         })
-        ->rawColumns(['actions']) // Mark these columns as "raw" HTML
+        ->rawColumns(['actions'])
         ->make(true);
 }
+
 }

@@ -23,7 +23,7 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordC
     use HasRoles;
     use CanResetPassword;
     use HasProfilePhoto;
-
+    use Notifiable;
     protected $guard_name = 'web';
 
     protected $fillable = [
@@ -72,4 +72,5 @@ class User extends Authenticatable implements MustVerifyEmail, CanResetPasswordC
     {
         $this->notify(new CustomPasswordReset($token));
     }
+    
 }

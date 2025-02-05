@@ -11,6 +11,10 @@ class Kernel extends HttpKernel
      *
      * @var array<int, class-string|string>
      */
+    protected $commands = [
+        \App\Console\Commands\UpdateIncomingQuarter::class,
+    ];
+    
     protected $middleware = [
         // ... existing middleware
         \App\Http\Middleware\TrustProxies::class,

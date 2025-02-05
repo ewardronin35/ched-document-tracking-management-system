@@ -261,45 +261,38 @@ class DocumentController extends Controller
         return response()->file(storage_path('app/public/' . $document->file_path));
     }
     public function assignTracking(Request $request)
-    {
-        // Validate the incoming request data
-        $validated = $request->validate([
-            'tracking_number' => 'required|string|exists:documents,tracking_number',
-            'user_id' => 'required|integer|exists:users,id',
+{
+    $validated = $request->validate([
+        'tracking_number' => 'required|string|exists:documents,tracking_number',
+        'user_id' => 'required|integer|exists:users,id',
+    ]);
+
+    try {
+        // Retrieve the document and user
+        $document = Document::where('tracking_number', $validated['tracking_number'])->firstOrFail();
+        $user = User::findOrFail($validated['user_id']);
+
+        // Update document details
+        $document->email = $user->email;
+        $document->full_name = $user->name;
+        $document->status = 'Redirected';
+        $document->status_details = json_encode([
+            'message'   => 'Document redirected to ' . $user->name . '.',
+            'timestamp' => Carbon::now()->toDateTimeString(),
         ]);
-    
-        try {
-            // Retrieve the document
-            $document = Document::where('tracking_number', $validated['tracking_number'])->firstOrFail();
-    
-            // Authorization Check: Ensure the user can assign tracking to this document
-            $this->authorize('assignTracking', $document);
-    
-            // Retrieve the user to assign
-            $user = User::findOrFail($validated['user_id']);
-    
-            // Assign the tracking to the selected user
-            $document->email = $user->email;
-            $document->full_name = $user->name;
-    
-            // Update status to 'Redirected'
-            $document->status = 'Redirected';
-            $document->status_details = json_encode([
-                'message' => 'Document redirected to ' . $document->full_name . '.',
-                'timestamp' => Carbon::now()->toDateTimeString(),
-            ]);
-    
-            $document->save();
-    
-            return redirect()->back()->with('success', 'Tracking number assigned and status updated to Redirected successfully.');
-        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
-            abort(403, 'You do not have permission to assign tracking to this document.');
-        } catch (\Exception $e) {
-            // Log the error for debugging
-            Log::error('Assign Tracking Error: ' . $e->getMessage());
-    
-            return redirect()->back()->with('error', 'An error occurred while assigning the tracking number.');
-        }
+        $document->save();
+
+        // Dispatch the notification to the user:
+        $user->notify(new \App\Notifications\DocumentStatusNotification($document));
+
+        return redirect()->back()->with('success', 'Tracking number assigned and status updated to Redirected successfully.');
+    } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+        abort(403, 'You do not have permission to assign tracking to this document.');
+    } catch (\Exception $e) {
+        \Log::error('Assign Tracking Error: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'An error occurred while assigning the tracking number.');
     }
+}
+
     
 }

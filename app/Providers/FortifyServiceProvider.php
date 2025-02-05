@@ -16,6 +16,9 @@ use Laravel\Fortify\Fortify;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Fortify\Contracts\LoginResponse;
+use Laravel\Fortify\Contracts\FailedLoginResponse;
+use Laravel\Fortify\Contracts\LogoutResponse;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -32,40 +35,90 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::resetUserPasswordsUsing(\App\Actions\Fortify\MarkEmailVerifiedOnReset::class);
+        Fortify::resetUserPasswordsUsing(MarkEmailVerifiedOnReset::class);
 
         RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
-
+            $throttleKey = Str::transliterate(
+                Str::lower($request->input(Fortify::username())).'|'.$request->ip()
+            );
             return Limit::perMinute(5)->by($throttleKey);
         });
 
         RateLimiter::for('two-factor', function (Request $request) {
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
-
-        // Corrected authenticateUsing callback
+        $this->app->singleton(LoginResponse::class, function ($app) {
+            return new class implements LoginResponse {
+                public function toResponse($request)
+                {
+                    // If the request expects JSON, return a JSON response
+                    if ($request->wantsJson()) {
+                        // Determine redirect URL; adjust as needed for role-based routing
+                        $redirectUrl = route('dashboard'); 
+                        return response()->json([
+                            'success'   => true,
+                            'redirect'  => $redirectUrl,
+                            'csrfToken' => csrf_token(),
+                        ]);
+                    }
+                    // Fallback to default redirect
+                    return redirect()->intended(config('fortify.home'));
+                }
+            };
+        });
+        
+        $this->app->singleton(FailedLoginResponse::class, function ($app) {
+            return new class implements FailedLoginResponse {
+                public function toResponse($request)
+                {
+                    if ($request->wantsJson()) {
+                        // Collect validation errors if any
+                        $errors = session('errors') ? session('errors')->getBag('default')->all() : ['Invalid credentials.'];
+                        return response()->json([
+                            'success' => false,
+                            'errors'  => $errors,
+                            'csrfToken' => csrf_token(),
+                        ], 422);
+                    }
+                    // Fallback to default redirect with errors
+                    return redirect()->route('login')
+                                     ->withInput($request->only('email'))
+                                     ->withErrors([
+                                         'email' => trans('auth.failed'),
+                                     ]);
+                }
+            };
+        });
+        $this->app->singleton(LogoutResponse::class, function ($app) {
+            return new class implements LogoutResponse {
+                public function toResponse($request)
+                {
+                    return redirect('/login');
+                }
+            };
+        });
+        // Custom authentication logic with flash message on success
         Fortify::authenticateUsing(function (Request $request) {
-            // Retrieve the user by email
+            // Sanitize and validate input here if needed (Fortify handles basic validation already).
             $user = User::where('email', $request->email)->first();
 
-            // Verify the password
             if ($user && Hash::check($request->password, $user->password)) {
-                // Optionally set a session flash message for Toastr
+                // Flash success message to the session
                 session()->flash('success', 'You have successfully logged in!');
-
-                // Optionally log the login event
-                Log::info('User Logged In: ', ['email' => $user->email]);
-
-                return $user; // Return the User instance
+                // Log the login event for auditing
+                Log::info('User Logged In:', ['email' => $user->email]);
+                return $user;
             }
 
-            return null; // Authentication failed
+            // If authentication fails, Fortify will handle redirection back with errors.
+            session()->flash('error', 'Invalid credentials.');
+
+            return null;
         });
+
     }
 }
