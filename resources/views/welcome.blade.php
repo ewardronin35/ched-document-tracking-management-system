@@ -676,8 +676,8 @@
           <div class="step-tutorial">
             <div class="step-number-tutorial">1</div>
             <div class="step-details">
-                <h5>Log In & Prepare Files</h5>
-                <p>Sign in with your email and gather all files you plan to upload. Make sure they are in PDF, DOC, or DOCX format.</p>
+                <h5>Prepare Your Files</h5>
+                <p>Gather all files you plan to upload. Make sure they are in PDF, DOC, or DOCX format.</p>
             </div>
           </div>
           <!-- Step 2 -->

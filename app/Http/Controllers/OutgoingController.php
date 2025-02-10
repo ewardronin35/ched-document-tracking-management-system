@@ -59,13 +59,15 @@ class OutgoingController extends Controller
                 'incoming_id'       => $item->incoming_id,
                 'travel_date'       => $item->travel_date,
                 'es_in_charge'      => $item->es_in_charge,
-                'quarter_label'     => $item->quarter_label, // dynamic from your model accessor
+                'quarter_label' => $item->quarter_label, // calls getQuarterLabelAttribute()
+                'quarter'       => $item->quarter,       // the raw integer from DB
             ];
         })->toArray();
 
         // 2) Incomings
         $incomings = Incoming::all()->map(function ($item) {
             return [
+                'id'                => $item->id,
                 'quarter'           => $item->quarter,
                 'chedrix_2025'      => $item->chedrix_2025,
                 'location'          => $item->location,
@@ -169,7 +171,18 @@ class OutgoingController extends Controller
     {
         Log::info('OutgoingController@store called with data:', $request->all());
 
-        // Provide default values for new Outgoings if they aren't set
+        if (!$request->filled('date_released')) {
+            // e.g., set it to today's date (or any default you like).
+            $request->merge(['date_released' => Carbon::now()->format('Y-m-d')]);
+        }
+    
+        // 2) Compute the quarter from date_released
+        //    This ensures quarter is set even if user never provides it.
+        $month   = Carbon::parse($request->date_released)->month; // e.g. 1..12
+        $quarter = ceil($month / 3);  // 1..4
+        $request->merge(['quarter' => $quarter]);
+    
+        // 3) Provide fallback defaults for other fields (as before)
         if (!$request->filled('chedrix_2025')) {
             $request->merge(['chedrix_2025' => 'CHEDRIX-2025']);
         }
@@ -177,30 +190,30 @@ class OutgoingController extends Controller
             $request->merge(['o' => 'O']);
         }
         if (!$request->filled('status')) {
-            $request->merge(['status' => 'Pending']); 
+            $request->merge(['status' => 'Pending']);
         }
-
-        // Validate
         $validated = $request->validate([
-            'date_released'     => 'required|date',
-            'category'          => 'required|string',
-            'addressed_to'      => 'required|string',
-            'email'             => 'required|email',
-            'subject_of_letter' => 'nullable|string', // or 'required_unless:category,TRAVEL ORDER,ONO'
+            'date_released'     => 'nullable|date',   // now guaranteed to be set
+            'quarter'           => 'required|integer|min:1|max:4',
+            'category'          => 'nullable|string',
+            'addressed_to'      => 'nullable|string',
+            'email'             => 'nullable|email',
+            'subject_of_letter' => 'nullable|string',
             'remarks'           => 'nullable|string',
             'libcap_no'         => 'nullable|string',
-            'status'            => 'required|string', // or in:Pending,In Progress,Completed,Rejected
-            'chedrix_2025'      => 'nullable|string',
-            'o'                 => 'nullable|string',
+            'status'            => 'nullable|string',
+            'chedrix_2025'      => 'required|string',
+            'o'                 => 'required|string',
+            'no'                => 'nullable|string',
             'incoming_id'       => 'nullable|exists:incoming,id',
             'travel_date'       => 'nullable|date',
             'es_in_charge'      => 'nullable|string',
         ]);
-
-        // Create
+    
+        // 5) Create
         $outgoing = Outgoing::create($validated);
-
-        // Link to Incoming if present
+    
+        // 6) Link to Incoming if present
         if ($outgoing->incoming_id) {
             $incoming = Incoming::find($outgoing->incoming_id);
             if ($incoming) {
@@ -208,16 +221,16 @@ class OutgoingController extends Controller
                 $incoming->save();
             }
         }
-
+    
         Log::info('Outgoing created successfully:', $outgoing->toArray());
-
+    
         if ($request->wantsJson()) {
             return response()->json([
                 'message' => 'Outgoing created successfully.',
                 'data'    => $outgoing,
             ], 201);
         }
-
+    
         $prefix = $this->getCurrentPrefix();
         return redirect()->route("{$prefix}.outgoings.index")
                          ->with('success', 'Outgoing created successfully.');

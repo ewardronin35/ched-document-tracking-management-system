@@ -480,9 +480,36 @@ class GmailController extends Controller
     /**
  * Fetches emails from Gmail API
  */
+/**
+ * Fetches emails from Gmail API filtered by category.
+ */
 public function getEmails(Request $request)
 {
-    // Initialize Google Client
+    // Determine category and map to Gmail label
+    $category = strtolower($request->input('category', 'inbox'));
+    $labelIds = [];
+    switch ($category) {
+        case 'inbox':
+            $labelIds[] = 'INBOX';
+            break;
+        case 'sent':
+            $labelIds[] = 'SENT';
+            break;
+        case 'drafts':
+            $labelIds[] = 'DRAFT';
+            break;
+        case 'spam':
+            $labelIds[] = 'SPAM';
+            break;
+        case 'trash':
+            $labelIds[] = 'TRASH';
+            break;
+        default:
+            $labelIds[] = 'INBOX';
+            break;
+    }
+
+    // Initialize Google Client (token retrieval and refresh code remains unchanged)
     $client = new Google_Client();
     $client->setAuthConfig($this->credentialsPath);
     $client->setScopes([
@@ -503,23 +530,19 @@ public function getEmails(Request $request)
     if ($gmailToken) {
         $client->setAccessToken($gmailToken->access_token);
     } else {
-        // No token found, redirect to OAuth
         $authUrl = $client->createAuthUrl();
         return redirect($authUrl)->with('error', 'Please authenticate with Google.');
     }
 
-    // Check if token has the required scopes
     if (!$this->tokenHasRequiredScopes($client->getAccessToken(), [
         Google_Service_Gmail::GMAIL_READONLY,
         Google_Service_Gmail::GMAIL_SEND
     ])) {
-        // Force reacquisition
         $gmailToken->delete();
         $authUrl = $client->createAuthUrl();
         return redirect($authUrl)->with('error', 'Please authenticate with Google.');
     }
 
-    // Refresh token if expired
     if ($client->isAccessTokenExpired()) {
         if ($client->getRefreshToken()) {
             $newAccessToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
@@ -533,9 +556,12 @@ public function getEmails(Request $request)
     }
 
     try {
-        // Initialize Gmail Service
+        // Initialize Gmail Service and list messages using the label filter
         $service = new Google_Service_Gmail($client);
-        $messagesResponse = $service->users_messages->listUsersMessages('me', ['maxResults' => 20]);
+        $messagesResponse = $service->users_messages->listUsersMessages('me', [
+            'maxResults' => 20,
+            'labelIds'   => $labelIds
+        ]);
         $messages = $messagesResponse->getMessages() ?: [];
 
         $emails = [];
@@ -561,20 +587,23 @@ public function getEmails(Request $request)
                 } elseif ($name === 'from') {
                     $emailData['from'] = $header->getValue();
                 } elseif ($name === 'date') {
-                    $emailData['date'] = Carbon::parse($header->getValue())->format('M d, Y h:i A');
+                    $emailData['date'] = \Carbon\Carbon::parse($header->getValue())->format('M d, Y h:i A');
                 }
             }
             $emails[] = $emailData;
         }
 
         return response()->json([
-            'data' => $emails
+            'data'         => $emails,
+            'current_page' => 1, // (Server-side pagination not implemented in this example)
+            'last_page'    => 1
         ]);
     } catch (\Exception $e) {
         Log::error('Error fetching emails: ' . $e->getMessage());
         return response()->json(['error' => 'Error fetching emails.'], 500);
     }
 }
+
 /**
  * Fetch details of a single email.
  * AJAX endpoint.

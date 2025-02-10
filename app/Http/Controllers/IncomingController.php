@@ -71,44 +71,51 @@ class IncomingController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
-    {   
-        $validated = $request->validate([
-        'reference_number' => 'required',  // Remove `unique:incoming,reference_number`
-            'date_received'    => 'required|date',
-            'time_emailed'     => 'required',
-            'sender_name'      => 'required|string|max:255',
-            'sender_email'     => 'required|email|max:255',
-            'subject'          => 'required|string|max:255',
-            'remarks'          => 'nullable|string',
-            'date_time_routed' => 'nullable|date',
-            'routed_to'        => 'nullable|string|max:255',
-            'date_acted_by_es' => 'nullable|date',
-            'outgoing_details' => 'nullable|string',
-            'year'             => 'required|integer|digits:4',
-            'location'         => 'nullable|string|max:255',  // if you use location
-        ]);
+{   
+    // Validate the incoming request.
+    // We assume the client auto-fills these fields.
+    $validated = $request->validate([
+        'reference_number' => 'nullable', // now optional
+        'date_received'    => 'nullable|date',
+        'time_emailed'     => 'nullable',
+        'sender_name'      => 'nullable|string|max:255',
+        'sender_email'     => 'nullable|email|max:255',
+        'subject'          => 'nullable|string|max:255',
+        'remarks'          => 'nullable|string',
+        'date_time_routed' => 'nullable|date',
+        'routed_to'        => 'nullable|string|max:255',
+        'No'               => 'nullable|string', // auto-filled
+        'year'             => 'nullable|integer|digits:4',
+        'location'         => 'nullable|string|max:255',
+        'chedrix_2025'     => 'nullable|string',
+        'quarter'          => 'required|integer|min:1|max:4',
+    ]);
     
-        // Set default for chedrix_2025 if not provided
-        if (!$request->filled('chedrix_2025')) {
-            $validated['chedrix_2025'] = 'CHEDRIX-2025';
-        }
-    
-        // Compute the quarter from date_received
+    // Use client-supplied defaults if available; otherwise, set fallback defaults.
+    if (!isset($validated['chedrix_2025']) || empty($validated['chedrix_2025'])) {
+        $validated['chedrix_2025'] = 'CHEDRIX-2025';
+    }
+    if (!isset($validated['quarter'])) {
+        // Fallback: compute quarter from date_received.
         $dateReceived = Carbon::parse($validated['date_received']);
         $validated['quarter'] = intdiv($dateReceived->month - 1, 3) + 1;
-    
-        // Generate the sequential "no" value
+    }
+    if (!isset($validated['No']) || empty($validated['No'])) {
+        // Fallback: generate a sequential number.
         $lastIncoming = Incoming::orderBy('id', 'desc')->first();
         $lastNo = ($lastIncoming && $lastIncoming->no) ? intval($lastIncoming->no) : 0;
         $validated['No'] = sprintf('%04d', $lastNo + 1);
-    
-        $incoming = Incoming::create($validated);
-    
-        return response()->json([
-            'message' => 'Incoming communication created successfully.',
-            'data'    => $incoming
-        ], 201);
     }
+
+    // Create the incoming record using the validated data.
+    $incoming = Incoming::create($validated);
+
+    return response()->json([
+        'message' => 'Incoming communication created successfully.',
+        'data'    => $incoming
+    ], 201);
+}
+
     
     /**
      * Display the specified incoming communication.
@@ -226,19 +233,19 @@ class IncomingController extends Controller
     }
 
     public function import(Request $request)
-{
-    $request->validate([
-        'csv_file' => 'required|file|mimes:csv,txt|max:2048',
-    ]);
-
-    try {
-        Excel::import(new IncomingImport, $request->file('csv_file'));
-        return redirect()->back()->with('success', 'CSV imported successfully!');
-    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-        $failures = $e->failures();
-        return back()->withErrors($failures);
+    {
+        
+        $request->validate([
+            'filepond' => 'required|file|mimes:csv,txt,xls,xlsx|max:2048',
+        ]);
+    
+        $file = $request->file('filepond');
+    
+        Excel::import(new \App\Imports\IncomingImport, $file);
+        
+        return response()->json(['success' => 'File imported successfully.'], 200);
     }
-}
+    
 protected function mapSubjectToCategory($subject)
     {
         // Check if the subject exists in the mapping

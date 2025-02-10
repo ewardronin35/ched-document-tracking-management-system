@@ -18,9 +18,10 @@ class Outgoing extends Model
     protected $table = 'outgoings';
 
     protected $fillable = [
-        'no',
+        'No',
         'date_released',
         'category',
+        'quarter',
         'addressed_to',
         'email',
         'subject_of_letter',
@@ -51,25 +52,26 @@ class Outgoing extends Model
     {
         return $this->belongsTo(Incoming::class);
     }
-    public function getQuarterAttribute()
+    public function getQuarterLabelAttribute()
     {
         if (!$this->date_released) {
             return 'Unknown Quarter';
         }
-
-        $month = \Carbon\Carbon::parse($this->date_released)->month;
-
+    
+        $month = Carbon::parse($this->date_released)->month;
+    
         switch (true) {
             case in_array($month, [1, 2, 3]):
                 return 'Q1 JAN-FEB-MAR';
             case in_array($month, [4, 5, 6]):
-                return 'Q2 APR-MAY-JUNE';
+                return 'Q2 APR-MAY-JUN';
             case in_array($month, [7, 8, 9]):
-                return 'Q3 JUL-AUG-SEPT';
+                return 'Q3 JUL-AUG-SEP';
             case in_array($month, [10, 11, 12]):
                 return 'Q4 OCT-NOV-DEC';
             default:
                 return 'Unknown Quarter';
         }
     }
+    
 }

@@ -93,6 +93,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::post('gmail/send', [GmailController::class, 'sendEmail'])->name('sendEmail');
     Route::get('gmail/emails', [GmailController::class, 'listEmails'])->name('gmail.emails');
+    
     Route::post('heis/import', [HEIController::class, 'import'])->name('heis.import');
     Route::get('heis/import', [HEIController::class, 'showImportForm'])->name('heis.import.form');
     Route::get('/emails', [GmailController::class, 'listEmails'])->name('gmail.emails');
@@ -111,6 +112,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/so_master_lists/data', [SoMasterListController::class, 'getData'])->name('so_master_lists.data');
     Route::resource('majors', MajorsController::class);
     Route::resource('outgoings', OutgoingController::class);
+    Route::post('gmail/import', [GmailController::class, 'import'])->name('gmail.import');
+    Route::post('gmail/suggestions', [GmailController::class, 'suggestions'])->name('gmail.suggestions');
 
     Route::get('/programs/data', [ProgramsController::class, 'indexData'])->name('programs.data');
     Route::put('/programs/{program}', [ProgramsController::class, 'update'])->name('programs.update');

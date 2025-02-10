@@ -3,53 +3,61 @@
 @section('content')
 
 @push('styles')
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+  <!-- Fonts and Handsontable CSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+  <!-- FilePond CSS -->
+  <link href="https://unpkg.com/filepond/dist/filepond.min.css" rel="stylesheet">
+  <!-- (Optional) FilePond plugin for file type validation -->
+  <link href="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.min.css" rel="stylesheet">
 
-<style>
-  body, .handsontable .ht_master .htCore td, .handsontable .ht_master thead th {
-    font-family: 'Poppins', sans-serif !important;
-  }
-  .handsontable .ht_master .htCore td {
-    border: 1px solid #dee2e6;
-    padding: 0.75rem;
-  }
-  .handsontable .ht_master thead th {
-    background: #f8f9fa;
-    color: #495057;
-    border: 1px solid #dee2e6;
-    font-weight: 600;
-  }
-  .highlightedRow {
-    background-color: #ffff99 !important;
-  }
-  #handsontable-outgoings,
-  #handsontable-incomings,
-  #handsontable-travel-memo,
-  #handsontable-ono {
-    max-height: 650px;
-    overflow: auto;
-  }
-  .release-btn {
-    padding: 2px 5px;
-    font-size: 0.8rem;
-  }
-  .search-field {
-    width: 200px;
-  }
-  .released-row {
-    background-color: #d4edda !important; /* Light green */
-  }
-  .htQuarterLabel {
-    font-weight: bold;
-    background-color: #e9ecef;
-  }
-</style>
+  <style>
+    body, .handsontable .ht_master .htCore td, .handsontable .ht_master thead th {
+      font-family: 'Poppins', sans-serif !important;
+    }
+    .handsontable .ht_master .htCore td {
+      border: 1px solid #dee2e6;
+      padding: 0.75rem;
+    }
+    .handsontable .ht_master thead th {
+      background: #f8f9fa;
+      color: #495057;
+      border: 1px solid #dee2e6;
+      font-weight: 600;
+    }
+    .highlightedRow {
+      background-color: #ffff99 !important;
+    }
+    #handsontable-outgoings,
+    #handsontable-incomings,
+    #handsontable-travel-memo,
+    #handsontable-ono {
+      max-height: 650px;
+      overflow: auto;
+    }
+    .release-btn {
+      padding: 2px 5px;
+      font-size: 0.8rem;
+    }
+    .search-field {
+      width: 200px;
+    }
+    .released-row {
+      background-color: #d4edda !important;
+    }
+    .htQuarterLabel {
+      font-weight: bold;
+      background-color: #e9ecef;
+    }
+    /* Additional styling for the import tab */
+    .filepond--root {
+      margin-top: 1rem;
+    }
+  </style>
 @endpush
-
 <div class="container-fluid">
-    <!-- Main Tabs: Incomings / Outgoings ... etc. -->
+    <!-- Main Tabs: Incomings / Outgoings / Imports & Reports -->
     <ul class="nav nav-tabs" id="documentTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="incomings-tab" data-bs-toggle="tab" data-bs-target="#incomings"
@@ -63,39 +71,37 @@
                 Outgoings
             </button>
         </li>
-        <!-- Add your other tabs here -->
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="imports-reports-tab" data-bs-toggle="tab" data-bs-target="#imports-reports"
+                    type="button" role="tab" aria-controls="imports-reports" aria-selected="false">
+                Imports &amp; Reports
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content" id="documentTabsContent">
-        
-        <!-- Incomings Tab -->
+        <!-- Incomings Tab (unchanged) -->
         <div class="tab-pane fade show active pt-3" id="incomings" role="tabpanel" aria-labelledby="incomings-tab">
+            <!-- Your Incomings Card and Handsontable container -->
             <div class="card mb-4">
                 <div class="card-header d-flex align-items-center">
                     <span>Incomings</span>
                     <input type="text" id="search-incomings" class="form-control ms-3 search-field" placeholder="Search Incomings">
                 </div>
-               
-
-                    <!-- Incomings Handsontable Container -->
-                    <div id="handsontable-incomings" wire:ignore style="overflow-x:auto;"></div>
+                <div id="handsontable-incomings" wire:ignore style="overflow-x:auto;"></div>
             </div>
         </div>
 
-        <!-- Outgoings Tab -->
+        <!-- Outgoings Tab (unchanged) -->
         <div class="tab-pane fade pt-3" id="outgoings" role="tabpanel" aria-labelledby="outgoings-tab">
             <div class="card mb-4">
                 <div class="card-header d-flex align-items-center">
                     <span>All Outgoings</span>
                     <input type="text" id="search-outgoings" class="form-control ms-3 search-field" placeholder="Search Outgoings">
                 </div>
-               
-
-                    <div id="handsontable-outgoings" wire:ignore style="overflow-x:auto;"></div>
-              
+                <div id="handsontable-outgoings" wire:ignore style="overflow-x:auto;"></div>
             </div>
-
-            <!-- Subtabs for Travel Memo & O No. ... -->
+            <!-- Subtabs for Travel Memo & O No. -->
             <ul class="nav nav-tabs" id="outgoingsSubTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="travel-memo-tab" data-bs-toggle="tab"
@@ -112,7 +118,6 @@
                     </button>
                 </li>
             </ul>
-
             <div class="tab-content" id="outgoingsSubTabsContent">
                 <!-- Travel Memo Subtab -->
                 <div class="tab-pane fade show active p-3" id="travel-memo" role="tabpanel" aria-labelledby="travel-memo-tab">
@@ -126,7 +131,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- O No. Subtab -->
                 <div class="tab-pane fade p-3" id="ono" role="tabpanel" aria-labelledby="ono-tab">
                     <div class="card mb-4">
@@ -139,9 +143,65 @@
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
+
+        <!-- Imports & Reports Tab -->
+        <div class="tab-pane fade pt-3" id="imports-reports" role="tabpanel" aria-labelledby="imports-reports-tab">
+            <!-- Subtabs for Imports and Reports -->
+            <ul class="nav nav-tabs" id="importsReportsSubTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="imports-tab" data-bs-toggle="tab"
+                            data-bs-target="#imports" type="button" role="tab"
+                            aria-controls="imports" aria-selected="true">
+                        Imports
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="reports-tab" data-bs-toggle="tab"
+                            data-bs-target="#reports" type="button" role="tab"
+                            aria-controls="reports" aria-selected="false">
+                        Reports
+                    </button>
+                </li>
+            </ul>
+            <div class="tab-content" id="importsReportsSubTabsContent">
+                <!-- Imports Subtab -->
+                <div class="tab-pane fade show active p-3" id="imports" role="tabpanel" aria-labelledby="imports-tab">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <span>Import Excel Files (CSV, XLS, XLSX)</span>
+                        </div>
+                        <div class="card-body">
+                            <!-- The form action should point to your import route.
+                                 You may have separate forms for Incomings and Outgoings if needed.
+                                 Here we show one example for Incomings. -->
+                            <form id="import-form" method="POST" action="{{ route('admin.incomings.import') }}" enctype="multipart/form-data">
+                                @csrf
+                                <input type="file"
+                                       class="filepond"
+                                       name="filepond"
+                                       id="filepond"
+                                       accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                                <button type="submit" class="btn btn-primary mt-3">Upload Files</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!-- Reports Subtab -->
+                <div class="tab-pane fade p-3" id="reports" role="tabpanel" aria-labelledby="reports-tab">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <span>Reports</span>
+                        </div>
+                        <div class="card-body">
+                            <!-- Your report generation interface goes here. -->
+                            <p>Report generation functionality can be implemented here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- End of Imports & Reports Tab -->
     </div>
 </div>
 
@@ -150,6 +210,43 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+ <!-- FilePond JS -->
+ <script src="https://unpkg.com/filepond/dist/filepond.min.js"></script>
+  <!-- FilePond plugin for file type validation -->
+  <script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.min.js"></script>
+  <script>
+    // Register the plugin if needed
+    FilePond.registerPlugin(FilePondPluginFileValidateType);
+
+    // Select the file input and create a FilePond instance
+    const inputElement = document.querySelector('input.filepond');
+    FilePond.create(inputElement, {
+      maxFiles: 2,
+      acceptedFileTypes: ['.csv', '.xls', '.xlsx'],
+      labelFileTypeNotAllowed: 'Only Excel files are allowed.',
+      fileValidateTypeLabelExpectedTypes: 'Expects {allButLastType} or {lastType}',
+      server: {
+          process: {
+            url: '{{ route("admin.incomings.import") }}',
+            method: 'POST',
+            headers: {
+              'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            onload: (response) => {
+              // Handle successful response here (for example, reload the page or display a toast)
+              toastr.success('Import successful!');
+              return response;
+            },
+            onerror: (response) => {
+              toastr.error('Error importing file.');
+            }
+          }
+          // You can also add revert, restore, load endpoints if needed.
+      }
+    });
+  </script>
+
 <script>
     const userId = {{ auth()->user()->id ?? 'null' }};
     console.log("Listening for notifications for user: " + userId);
@@ -525,11 +622,6 @@ if (isBlank) {
           };
           console.log("Payload for row " + rowIndex + ":", payload);
 
-// Optionally, skip sending if a required field is missing (example)
-if (!payload.reference_number) {
-  console.log("Skipping row " + rowIndex + " update because reference_number is missing.");
-  return;
-}
 const incomingId = rowData.id;
 const hasValidId = incomingId && incomingId !== 'undefined';
 console.log("Row data being saved:", rowData);
@@ -694,7 +786,7 @@ if (blankOutgoing) {
   lastOutgoingRow.no = String(maxNo + 1).padStart(4, '0');
 }
     const outgoingsColumns = [
-      { data: 'quarter_label',     title: 'Quarter',   renderer: quarterLabelRenderer, readOnly: true },
+      { data: 'quarter_label',  title: 'Quarter Label', readOnly: true }, // e.g. "Q1 JAN-FEB-MAR"
       { data: 'no',                title: 'No.' },
       { data: 'chedrix_2025',      title: 'CHEDRIX 2025' },
       { data: 'o',                 title: 'O' },
@@ -734,49 +826,65 @@ if (blankOutgoing) {
 
       afterChange: function(changes, source) {
         if (!changes) return;
-        // Skip if 'internal' or 'loadData'
-        if (source === 'loadData' || source === 'internal') {
-          return;
-        }
-        // Only proceed for user changes
-        if (!['edit','Autofill','Paste','Undo'].includes(source)) {
-          return;
-        }
+  if (source === 'loadData' || source === 'internal') return;
+  if (!['edit','Autofill','Paste','Undo'].includes(source)) return;
 
         debugLog("Outgoings afterChange => source=" + source + ", changes=", changes);
 
+
+        changes.forEach(function(change) {
+    const [rowIndex, property, oldVal, newVal] = change;
+    if (property === 'date_released' && newVal) {
+      const date = new Date(newVal);
+      // Compute quarter: month 0-2 => Q1, 3-5 => Q2, etc.
+      const quarter = Math.floor(date.getMonth() / 3) + 1;
+      // Set the display quarter label (e.g., "Q2")
+      this.setDataAtRowProp(rowIndex, 'quarter_label', 'Q' + quarter, 'internal');
+      // Set the hidden numeric quarter field
+      this.setDataAtRowProp(rowIndex, 'quarter', quarter, 'internal');
+    }
+  }, this);
+
+
         // Auto-fill in last row
         changes.forEach(([rowIndex, prop, oldVal, newVal]) => {
-          const lastRowIndex = this.countRows() - 1;
-          if (rowIndex === lastRowIndex) {
-            const rowData = this.getSourceDataAtRow(rowIndex) || {};
-
-            if (!rowData.chedrix_2025) {
-              this.setDataAtRowProp(rowIndex, 'chedrix_2025', 'CHEDRIX-2025', 'internal');
-            }
-            if (!rowData.o) {
-              this.setDataAtRowProp(rowIndex, 'o', 'O', 'internal');
-            }
-            if (!rowData.no) {
-              const existingNos = this.getDataAtProp('no')
+    const lastRowIndex = this.countRows() - 1;
+    if (rowIndex === lastRowIndex) {
+        const rowData = this.getSourceDataAtRow(rowIndex) || {};
+        // If date_released is present but quarter_label is missing, compute it.
+        if (rowData.date_released && !rowData.quarter_label) {
+            const date = new Date(rowData.date_released);
+            // Compute quarter: months 0-2 = Q1, 3-5 = Q2, etc.
+            const quarter = Math.floor(date.getMonth() / 3) + 1;
+            this.setDataAtRowProp(rowIndex, 'quarter_label', 'Q' + quarter, 'internal');
+        }
+        // Set defaults for chedrix_2025, o and no as before:
+        if (!rowData.chedrix_2025) {
+            this.setDataAtRowProp(rowIndex, 'chedrix_2025', 'CHEDRIX-2025', 'internal');
+        }
+        if (!rowData.o) {
+            this.setDataAtRowProp(rowIndex, 'o', 'O', 'internal');
+        }
+        if (!rowData.no) {
+            const existingNos = this.getDataAtProp('no')
                 .filter(val => !!val)
                 .map(val => parseInt(val, 10))
                 .filter(num => !isNaN(num));
-              const maxNo = existingNos.length ? Math.max(...existingNos) : 0;
-              const nextNo = String(maxNo + 1).padStart(4, '0');
-              this.setDataAtRowProp(rowIndex, 'no', nextNo, 'internal');
-            }
-          }
-        });
+            const maxNo = existingNos.length ? Math.max(...existingNos) : 0;
+            const nextNo = String(maxNo + 1).padStart(4, '0');
+            this.setDataAtRowProp(rowIndex, 'no', nextNo, 'internal');
+        }
+    }
+});
 
         // Save to server
         let rowMap = {};
-        changes.forEach(([rowIndex, prop, oldVal, newVal]) => {
-          if (oldVal !== newVal) {
-            if (!rowMap[rowIndex]) rowMap[rowIndex] = {};
-            rowMap[rowIndex][prop] = newVal;
-          }
-        });
+  changes.forEach(([rowIndex, prop, oldVal, newVal]) => {
+    if (oldVal !== newVal) {
+      if (!rowMap[rowIndex]) rowMap[rowIndex] = {};
+      rowMap[rowIndex][prop] = newVal;
+    }
+  });
 
         Object.keys(rowMap).forEach(rowIndex => {
           const rowData = this.getSourceDataAtRow(rowIndex);
@@ -785,6 +893,7 @@ if (blankOutgoing) {
           debugLog("Saving outgoings => rowIndex=" + rowIndex, rowData);
 
           const payload = {
+            quarter: rowData.quarter, // now included!
             chedrix_2025:      rowData.chedrix_2025 || 'CHEDRIX-2025',
             o:                 rowData.o || 'O',
             date_released:     rowData.date_released,
