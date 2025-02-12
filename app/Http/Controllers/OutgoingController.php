@@ -41,7 +41,7 @@ class OutgoingController extends Controller
                 'id'                => $item->id,
 
                 // Show the user a zero-padded "No."
-                'no'                => str_pad($item->id, 4, '0', STR_PAD_LEFT),
+                'no' => $item->no ?: str_pad($item->id, 4, '0', STR_PAD_LEFT),
 
                 'date_released'     => $item->date_released
                                           ? Carbon::parse($item->date_released)->format('Y-m-d')
@@ -354,18 +354,69 @@ class OutgoingController extends Controller
      */
     public function import(Request $request)
     {
+        Log::info('Outgoing import request started.');
+
+        // Validate using the correct field name
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+            'outgoing_filepond' => 'required|file|mimes:csv,txt,xls,xlsx|max:2048',
         ]);
 
-        try {
-            // Adjust your import class so it no longer expects 'control_no'
-            Excel::import(new OutgoingImport, $request->file('csv_file'));
-
-            return redirect()->route('admin.outgoings.index')->with('success', 'CSV imported successfully!');
-        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
-            $failures = $e->failures();
-            return back()->withFailures($failures);
+        // Check for the file using the same field name
+        if (!$request->hasFile('outgoing_filepond')) {
+            Log::error('No file was uploaded for outgoing import.');
+            return redirect()->back()->with('error', 'No file was uploaded.');
         }
+
+        $files = $request->file('outgoing_filepond');
+        if (!is_array($files)) {
+            $files = [$files];
+        }
+
+        $errors = [];
+        foreach ($files as $file) {
+            Log::info('Processing outgoing file: ' . $file->getClientOriginalName());
+            $extension = strtolower($file->getClientOriginalExtension());
+            if (!$extension) {
+                $errors[] = 'One of the files does not have a valid extension.';
+                Log::error('File has no valid extension.');
+                continue;
+            }
+
+            switch ($extension) {
+                case 'csv':
+                    $readerType = \Maatwebsite\Excel\Excel::CSV;
+                    break;
+                case 'xls':
+                    $readerType = \Maatwebsite\Excel\Excel::XLS;
+                    break;
+                case 'xlsx':
+                    $readerType = \Maatwebsite\Excel\Excel::XLSX;
+                    break;
+                case 'txt':
+                    $readerType = \Maatwebsite\Excel\Excel::CSV;
+                    break;
+                default:
+                    $errors[] = 'Unsupported file type: ' . $extension;
+                    Log::error('Unsupported file type: ' . $extension);
+                    continue 2;
+            }
+
+            try {
+                Log::info('Importing outgoing file: ' . $file->getClientOriginalName() . ' using reader type: ' . $readerType);
+                Excel::import(new OutgoingImport, $file->getRealPath(), null, $readerType);
+                Log::info('Outgoing file imported: ' . $file->getClientOriginalName());
+            } catch (\Exception $e) {
+                Log::error("Error importing outgoing file: " . $e->getMessage());
+                $errors[] = 'Error importing file: ' . $e->getMessage();
+            }
+        }
+
+        if (count($errors)) {
+            Log::error('Outgoing import completed with errors: ' . implode(', ', $errors));
+            return redirect()->back()->with('error', implode(', ', $errors));
+        }
+
+        Log::info('Outgoing import completed successfully.');
+        return redirect()->route('admin.outgoings.index')->with('success', 'File(s) imported successfully!');
     }
 }

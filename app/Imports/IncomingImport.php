@@ -6,43 +6,49 @@ use App\Models\Incoming;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow; 
+use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
-class IncomingImport implements ToModel, WithHeadingRow, WithChunkReading, ShouldQueue
+class IncomingImport implements ToModel, WithHeadingRow, WithMapping, WithChunkReading, ShouldQueue
 {
     /**
+     * Specify which row in your Excel file contains the headers.
+     * (Change this if your header row is not in row 2.)
+     */
+    public function headingRow(): int
+    {
+        return 2;
+    }
+
+    /**
      * Normalize a CSV header.
-     *
-     * Converts the header to lowercase, trims spaces, replaces spaces,
-     * slashes, and periods with underscores, and removes duplicate underscores.
-     *
-     * @param string $header
-     * @return string
      */
     protected function normalizeHeader(string $header): string
     {
         $header = strtolower(trim($header));
-        // Replace spaces, slashes and periods with underscores
+        // Replace spaces, slashes, and periods with underscores
         $header = str_replace([' ', '/', '.'], '_', $header);
         // Replace multiple underscores with a single underscore
         $header = preg_replace('/_+/', '_', $header);
-        // Trim underscores from the beginning and end
         return trim($header, '_');
     }
 
     /**
      * Normalize the entire row keys.
-     *
-     * @param array $row
-     * @return array
      */
     protected function normalizeRow(array $row): array
     {
         $normalized = [];
         foreach ($row as $key => $value) {
+            // If $key is numeric, simply keep the value
+            if (is_numeric($key)) {
+                $normalized[$key] = $value;
+                continue;
+            }
             $normKey = $this->normalizeHeader($key);
-            // Skip keys that end up empty (if the header was blank)
             if (!empty($normKey)) {
                 $normalized[$normKey] = $value;
             }
@@ -51,70 +57,141 @@ class IncomingImport implements ToModel, WithHeadingRow, WithChunkReading, Shoul
     }
 
     /**
-     * Process each row from the file and create an Incoming model.
-     *
-     * @param array $row
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * Helper to check a list of possible keys and return the first found value.
      */
-    public function model(array $row)
+    protected function getValue(array $row, array $keys, $default = null)
     {
-        // Normalize row keys
+        foreach ($keys as $key) {
+            if (isset($row[$key]) && $row[$key] !== '') {
+                return $row[$key];
+            }
+        }
+        return $default;
+    }
+
+    /**
+     * Helper method to parse a date from Excel.
+     * If the value is numeric, it converts it from an Excel serial number.
+     */
+    protected function parseDate($value)
+    {
+        if (empty($value)) {
+            return null;
+        }
+        if (is_numeric($value)) {
+            try {
+                // Convert the Excel serial to a DateTime object and wrap it in Carbon
+                return Carbon::instance(ExcelDate::excelToDateTimeObject($value));
+            } catch (\Exception $e) {
+                Log::error("Error converting Excel date: " . $e->getMessage());
+                return null;
+            }
+        }
+        return Carbon::parse($value);
+    }
+
+    /**
+     * Helper method to parse a time from Excel.
+     * If the value is numeric, it converts the Excel time (a fraction of a day)
+     * to a DateTime object and formats it in 24-hour format (e.g., "08:00:00").
+     */
+    protected function parseTime($value)
+    {
+        if (empty($value)) {
+            return null;
+        }
+        if (is_numeric($value)) {
+            try {
+                // Convert the Excel time to a DateTime object.
+                $dateTime = ExcelDate::excelToDateTimeObject($value);
+                // Format the time as 24-hour time (e.g., "08:00:00")
+                return Carbon::instance($dateTime)->format('H:i:s');
+            } catch (\Exception $e) {
+                Log::error("Error converting Excel time: " . $e->getMessage());
+                return null;
+            }
+        }
+        // For non-numeric values, try parsing and formatting them in 24-hour format.
+        try {
+            return Carbon::parse($value)->format('H:i:s');
+        } catch (\Exception $e) {
+            Log::error("Error parsing time: " . $e->getMessage());
+            return $value;
+        }
+    }
+
+    /**
+     * Map each row from the file to an array with the keys your Incoming model expects.
+     */
+    public function map($row): array
+    {
+        // Normalize row keys (this will use the header row from the file)
         $row = $this->normalizeRow($row);
 
-        // Debug: Uncomment the following line to inspect the normalized row (only for testing)
-        // dd($row);
+        // Determine quarter.
+        $quarter = $this->getValue($row, ['quarter']);
+        if (!$quarter && isset($row['q1-jan_feb_mar'])) {
+            $quarter = 1;
+        }
+        if (!$quarter && !empty($row['date'])) {
+            $date = $this->parseDate($row['date']);
+            $quarter = intdiv($date->month - 1, 3) + 1;
+        }
 
-        // Skip the row if key columns appear empty.
+        // Parse date fields using the helper method.
+        $dateReceived   = $this->parseDate($this->getValue($row, ['date']));
+        $dateTimeRouted = $this->parseDate($this->getValue($row, ['date_time_routed']));
+        $dateActedByEs  = $this->parseDate($this->getValue($row, ['date_acted_by_es']));
+        $dateReleased   = $this->parseDate($this->getValue($row, ['date_released']));
+
+        return [
+            'reference_number'  => $this->getValue($row, ['reference_number', 'ref_no']),
+            'date_received'     => $dateReceived,  // comes from the "DATE" column
+            // Use the parseTime() helper for the "TIME EMAILED" column.
+            'time_emailed'      => $this->parseTime($this->getValue($row, ['time_emailed'])),
+            'sender_name'       => $this->getValue($row, ['sender_name', 'sender']),
+            'sender_email'      => $this->getValue($row, ['sender_email', 'email_address_of_sender']),
+            'subject'           => $this->getValue($row, ['subject']),
+            'remarks'           => $this->getValue($row, ['remarks', 'remarks_rp']),
+            'date_time_routed'  => $dateTimeRouted,
+            'routed_to'         => $this->getValue($row, ['routed_to', 'route_to_attendee']),
+            'date_acted_by_es'  => $dateActedByEs,
+            'outgoing_details'  => $this->getValue($row, ['outgoing_details']),
+            'year'              => (int)$this->getValue($row, ['year'], null),
+            'outgoing_id'       => $this->getValue($row, ['outgoing_id']),
+            'date_released'     => $dateReleased,
+            'chedrix_2025'      => $this->getValue($row, ['chedrix_2025', 'chedrix-2025'], 'CHEDRIX-2025'),
+            'location'          => $this->getValue($row, ['location']),
+            'No'                => $this->getValue($row, ['no']),
+            'quarter'           => $quarter,
+        ];
+    }
+
+    /**
+     * Create a new Incoming model using the mapped row.
+     */
+    public function model(array $mappedRow)
+    {
+        // Log the mapped data to debug what is being imported.
+        Log::info('Mapped row data: ' . json_encode($mappedRow));
+
+        // If any of these required fields are empty, skip the row.
         if (
-            empty($row['date']) &&
-            empty($row['time_emailed']) &&
-            empty($row['sender']) &&
-            empty($row['subject'])
+            empty($mappedRow['date_received']) ||
+            empty($mappedRow['time_emailed']) ||
+            empty($mappedRow['sender_name']) ||
+            empty($mappedRow['subject'])
         ) {
+            Log::info('Row skipped due to empty required fields in mapped data.');
             return null;
         }
 
-        // Convert dates if provided.
-        $dateReceived = !empty($row['date']) ? Carbon::parse($row['date']) : null;
-        $dateTimeRouted = !empty($row['date_time_routed']) ? Carbon::parse($row['date_time_routed']) : null;
-
-        // Determine quarter.
-        // If there is a column "q1-jan-feb-mar", assume quarter 1.
-        $quarter = null;
-        if (!empty($row['q1-jan-feb-mar'])) {
-            $quarter = 1;
-        } elseif ($dateReceived) {
-            $month = $dateReceived->month;
-            $quarter = intdiv($month - 1, 3) + 1;
-        }
-
-        return new Incoming([
-            // Adjust the keys to match your CSV headers after normalization.
-            'reference_number'  => $row['reference_number'] ?? null,
-            'date_received'     => $dateReceived,
-            'time_emailed'      => $row['time_emailed'] ?? null,
-            'sender_name'       => $row['sender'] ?? null,
-            'sender_email'      => $row['email_address_of_sender'] ?? null,
-            'subject'           => $row['subject'] ?? null,
-            'remarks'           => $row['remarks_rp'] ?? null,  // "REMARKS / RP" becomes remarks_rp
-            'date_time_routed'  => $dateTimeRouted,
-            'routed_to'         => $row['route_to_attendee'] ?? null, // from "ROUTE TO / ATTENDEE"
-            'date_acted_by_es'  => !empty($row['date_acted_by_es']) ? Carbon::parse($row['date_acted_by_es']) : null,
-            'outgoing_details'  => $row['outgoing_details'] ?? null,
-            'year'              => isset($row['year']) ? (int)$row['year'] : null,
-            'outgoing_id'       => $row['outgoing_id'] ?? null,
-            'date_released'     => !empty($row['date_released']) ? Carbon::parse($row['date_released']) : null,
-            'chedrix_2025'      => $row['chedrix-2025'] ?? 'CHEDRIX-2025',
-            'location'          => $row['location'] ?? null,
-            'No'                => $row['no'] ?? null,
-            'quarter'           => $row['quarter'] ?? $quarter,
-        ]);
+        Log::info('Creating Incoming with mapped data: ' . json_encode($mappedRow));
+        return new Incoming($mappedRow);
     }
 
     /**
      * Define the chunk size (number of rows per chunk).
-     *
-     * @return int
      */
     public function chunkSize(): int
     {

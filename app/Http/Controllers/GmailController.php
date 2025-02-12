@@ -34,7 +34,6 @@ class GmailController extends Controller
      */
     public function sendEmail(Request $request)
     {
-        // Validate input
         $request->validate([
             'to'            => 'required|email',
             'subject'       => 'required|string',
@@ -42,68 +41,17 @@ class GmailController extends Controller
             'attachments.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx,txt|max:2048',
         ]);
 
-        // Initialize Google Client with read + send scopes
-        $client = new Google_Client();
-        $client->setAuthConfig($this->credentialsPath);
-        $client->setScopes([
-            Google_Service_Gmail::GMAIL_READONLY,
-            Google_Service_Gmail::GMAIL_SEND,
-        ]);
-        $client->setAccessType('offline');
-        $client->setPrompt('select_account consent');
-
-        // **Retrieve Token from Database**
-        $user = Auth::user();
-        if (!$user) {
-            Log::error('No authenticated user found.');
-            return redirect()->route('login')->with('error', 'Please log in to continue.');
-        }
-
-        $gmailToken = GmailToken::where('user_id', $user->id)->first();
-        if ($gmailToken) {
-            $client->setAccessToken($gmailToken->access_token);
-        } else {
-            // No token found, redirect to OAuth
-            $authUrl = $client->createAuthUrl();
-            return redirect($authUrl)->with('error', 'Please authenticate with Google to send emails.');
-        }
-
-        // Check if token has the required scopes
-        if (!$this->tokenHasRequiredScopes($client->getAccessToken(), [
-            Google_Service_Gmail::GMAIL_READONLY,
-            Google_Service_Gmail::GMAIL_SEND
-        ])) {
-            // Force reacquisition
-            $gmailToken->delete();
-            $authUrl = $client->createAuthUrl();
-            return redirect($authUrl)->with('error', 'Please authenticate with Google to send emails.');
-        }
-
-        // Refresh token if expired
-        if ($client->isAccessTokenExpired()) {
-            if ($client->getRefreshToken()) {
-                $newAccessToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-                // Update token in database
-                $gmailToken->access_token = $newAccessToken;
-                $gmailToken->save();
-            } else {
-                // No refresh token, must re-authenticate
-                $gmailToken->delete();
-                $authUrl = $client->createAuthUrl();
-                return redirect($authUrl)->with('error', 'Please re-authenticate with Google to send emails.');
-            }
-        }
-
-        // Now we have a valid token with correct scopes
+        $client = $this->getGmailClient();
         $service = new Google_Service_Gmail($client);
 
-        // Prepare the raw email
-        $fromEmail = session('email_user') ?? 'your-email@gmail.com'; // Adjust as needed
+        // You can adjust the "from" address as needed.
+        $fromEmail = session('email_user') ?? 'your-email@gmail.com';
         $to = $request->input('to');
         $subject = $request->input('subject');
         $bodyContent = $request->input('body');
+        $selectedLabels = $request->input('labels', []); // For UI only
 
-        // Create MIME message
+        // Create a MIME message (using a multipart MIME format if attachments exist)
         $boundary = uniqid(rand(), true);
         $delimiter = '==Multipart_Boundary_x' . $boundary . 'x';
 
@@ -130,30 +78,28 @@ class GmailController extends Controller
                 $message .= "Content-Disposition: attachment; filename=\"{$filename}\"\r\n\r\n";
                 $message .= "{$encodedFile}\r\n\r\n";
             }
-
             $message .= "--{$delimiter}--";
         } else {
             $headers .= "Content-Type: text/plain; charset=\"utf-8\"\r\n\r\n";
-            $message = "{$bodyContent}";
+            $message = $bodyContent;
         }
+
+        // Note: Although we send a "labels" field in the form, Gmail’s send API does not support
+        // applying labels at send time. (Labels can be applied afterward via a modify request.)
 
         $rawMessageString = $headers . $message;
         $rawMessage = rtrim(strtr(base64_encode($rawMessageString), '+/', '-_'), '=');
 
-        // Create and send the message
         try {
             $messageObj = new Google_Service_Gmail_Message();
             $messageObj->setRaw($rawMessage);
-
             $sentMessage = $service->users_messages->send('me', $messageObj);
-
             return redirect()->back()->with('success', "Message sent successfully. ID: {$sentMessage->getId()}");
         } catch (\Exception $e) {
             Log::error('Error sending email: ' . $e->getMessage());
             return redirect()->back()->with('error', "Error sending email: " . $e->getMessage());
         }
     }
-
     /**
      * OAuth callback to fetch or refresh tokens.
      */
@@ -603,6 +549,71 @@ public function getEmails(Request $request)
         return response()->json(['error' => 'Error fetching emails.'], 500);
     }
 }
+/** Download Function */
+
+public function downloadAttachment($emailId, $attachmentId, $filename)
+{
+    // Initialize the Google Client (similar to other methods)
+    $client = new Google_Client();
+    $client->setAuthConfig($this->credentialsPath);
+    $client->setScopes([
+        Google_Service_Gmail::GMAIL_READONLY,
+        Google_Service_Gmail::GMAIL_SEND
+    ]);
+    $client->setAccessType('offline');
+    $client->setPrompt('select_account consent');
+
+    $user = Auth::user();
+    if (!$user) {
+        return redirect()->route('login')->with('error', 'Please log in to continue.');
+    }
+
+    $gmailToken = GmailToken::where('user_id', $user->id)->first();
+    if ($gmailToken) {
+        $client->setAccessToken($gmailToken->access_token);
+    } else {
+        $authUrl = $client->createAuthUrl();
+        return redirect($authUrl)->with('error', 'Please authenticate with Google.');
+    }
+
+    if (!$this->tokenHasRequiredScopes($client->getAccessToken(), [
+        Google_Service_Gmail::GMAIL_READONLY,
+        Google_Service_Gmail::GMAIL_SEND
+    ])) {
+        $gmailToken->delete();
+        $authUrl = $client->createAuthUrl();
+        return redirect($authUrl)->with('error', 'Please authenticate with Google.');
+    }
+
+    if ($client->isAccessTokenExpired()) {
+        if ($client->getRefreshToken()) {
+            $newAccessToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+            $gmailToken->access_token = $newAccessToken;
+            $gmailToken->save();
+        } else {
+            $gmailToken->delete();
+            $authUrl = $client->createAuthUrl();
+            return redirect($authUrl)->with('error', 'Please re-authenticate with Google.');
+        }
+    }
+
+    try {
+        $service = new Google_Service_Gmail($client);
+        $attachment = $service->users_messages_attachments->get('me', $emailId, $attachmentId);
+        $attachmentData = $attachment->getData();
+        // Decode the URL-safe base64 data
+        $fileData = base64_decode(strtr($attachmentData, '-_', '+/'));
+
+        return response()->streamDownload(function() use ($fileData) {
+            echo $fileData;
+        }, urldecode($filename), [
+            'Content-Type' => 'application/octet-stream'
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Error downloading attachment: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Error downloading attachment.');
+    }
+}
 
 /**
  * Fetch details of a single email.
@@ -732,5 +743,119 @@ public function getEmailDetails(Request $request)
         return response()->json(['error' => 'Error fetching email details.'], 500);
     }
 }
+/**
+ * Get contacts for autofill in the compose "To:" field using the Google People API.
+ */
+public function getContacts(Request $request)
+{
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json([], 401);
+    }
 
+    // Initialize Google Client and include the contacts scope.
+    $client = new Google_Client();
+    $client->setAuthConfig($this->credentialsPath);
+    $client->setScopes([
+        Google_Service_Gmail::GMAIL_READONLY,
+        Google_Service_Gmail::GMAIL_SEND,
+        'https://www.googleapis.com/auth/contacts.readonly'
+    ]);
+    $client->setAccessType('offline');
+    $client->setPrompt('select_account consent');
+
+    // Retrieve token from database and set it on the client.
+    $gmailToken = GmailToken::where('user_id', $user->id)->first();
+    if ($gmailToken) {
+        $client->setAccessToken($gmailToken->access_token);
+    } else {
+        $authUrl = $client->createAuthUrl();
+        return redirect($authUrl)->with('error', 'Please authenticate with Google.');
+    }
+
+    // (Optional) Check and refresh token if expired...
+    if ($client->isAccessTokenExpired()) {
+        if ($client->getRefreshToken()) {
+            $newAccessToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+            $gmailToken->access_token = $newAccessToken;
+            $gmailToken->save();
+        } else {
+            $gmailToken->delete();
+            $authUrl = $client->createAuthUrl();
+            return redirect($authUrl)->with('error', 'Please re-authenticate with Google.');
+        }
+    }
+
+    // Use Google People API to fetch contacts.
+    $peopleService = new \Google_Service_PeopleService($client);
+    // Fetch connections with names and email addresses.
+    $connections = $peopleService->people_connections->listPeopleConnections(
+        'people/me',
+        ['personFields' => 'names,emailAddresses']
+    );
+
+    $contacts = [];
+    if ($connections->getConnections()) {
+        foreach ($connections->getConnections() as $person) {
+            $names = $person->getNames();
+            $emails = $person->getEmailAddresses();
+            if ($names && $emails) {
+                $contacts[] = [
+                    'name'  => $names[0]->getDisplayName(),
+                    'email' => $emails[0]->getValue()
+                ];
+            }
+        }
+    }
+
+    return response()->json($contacts);
+}
+private function getGmailClient()
+    {
+        $client = new Google_Client();
+        $client->setAuthConfig($this->credentialsPath);
+        $client->setScopes([
+            Google_Service_Gmail::GMAIL_READONLY,
+            Google_Service_Gmail::GMAIL_SEND
+        ]);
+        $client->setAccessType('offline');
+        $client->setPrompt('select_account consent');
+
+        $user = Auth::user();
+        if (!$user) {
+            Log::error('No authenticated user found.');
+            abort(401, 'Please log in to continue.');
+        }
+
+        $gmailToken = GmailToken::where('user_id', $user->id)->first();
+        if (!$gmailToken) {
+            $authUrl = $client->createAuthUrl();
+            abort(401, 'Please authenticate with Google. ' . $authUrl);
+        }
+        $client->setAccessToken($gmailToken->access_token);
+
+        // Check that the token includes the required scopes.
+        if (!$this->tokenHasRequiredScopes($client->getAccessToken(), [
+            Google_Service_Gmail::GMAIL_READONLY,
+            Google_Service_Gmail::GMAIL_SEND
+        ])) {
+            $gmailToken->delete();
+            $authUrl = $client->createAuthUrl();
+            abort(401, 'Please authenticate with Google. ' . $authUrl);
+        }
+
+        // Refresh token if expired
+        if ($client->isAccessTokenExpired()) {
+            if ($client->getRefreshToken()) {
+                $newAccessToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+                $gmailToken->access_token = $newAccessToken;
+                $gmailToken->save();
+            } else {
+                $gmailToken->delete();
+                $authUrl = $client->createAuthUrl();
+                abort(401, 'Please re-authenticate with Google. ' . $authUrl);
+            }
+        }
+        return $client;
+    }
 }

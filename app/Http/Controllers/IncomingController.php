@@ -234,17 +234,67 @@ class IncomingController extends Controller
 
     public function import(Request $request)
     {
+        Log::info('Import request started.');
+
+        // Check if any file was sent
+        if (!$request->hasFile('incoming_filepond')) {
+            Log::error('No file was uploaded.');
+            return response()->json(['error' => 'No file was uploaded.'], 422);
+        }
         
-        $request->validate([
-            'filepond' => 'required|file|mimes:csv,txt,xls,xlsx|max:2048',
-        ]);
-    
-        $file = $request->file('filepond');
-    
-        Excel::import(new \App\Imports\IncomingImport, $file);
+        $files = $request->file('incoming_filepond');
+        if (!is_array($files)) {
+            $files = [$files];
+        }
         
-        return response()->json(['success' => 'File imported successfully.'], 200);
+        $errors = [];
+        foreach ($files as $file) {
+            Log::info('Processing file: ' . $file->getClientOriginalName());
+            $extension = strtolower($file->getClientOriginalExtension());
+            if (!$extension) {
+                $errors[] = 'One of the files does not have a valid extension.';
+                Log::error('File has no valid extension.');
+                continue;
+            }
+        
+            switch ($extension) {
+                case 'csv':
+                    $readerType = \Maatwebsite\Excel\Excel::CSV;
+                    break;
+                case 'xls':
+                    $readerType = \Maatwebsite\Excel\Excel::XLS;
+                    break;
+                case 'xlsx':
+                    $readerType = \Maatwebsite\Excel\Excel::XLSX;
+                    break;
+                case 'txt':
+                    $readerType = \Maatwebsite\Excel\Excel::CSV;
+                    break;
+                default:
+                    $errors[] = 'Unsupported file type: ' . $extension;
+                    Log::error('Unsupported file type: ' . $extension);
+                    continue 2;
+            }
+        
+            try {
+                Log::info('Importing file: ' . $file->getClientOriginalName() . ' using reader type: ' . $readerType);
+                Excel::import(new IncomingImport, $file->getRealPath(), null, $readerType);
+                Log::info('File imported: ' . $file->getClientOriginalName());
+            } catch (\Exception $e) {
+                Log::error("Error importing file: " . $e->getMessage());
+                $errors[] = 'Error importing one of the files: ' . $e->getMessage();
+            }
+        }
+        
+        if (count($errors)) {
+            Log::error('Import completed with errors: ' . implode(', ', $errors));
+            return response()->json(['error' => implode(', ', $errors)], 500);
+        }
+        
+        Log::info('Import completed successfully.');
+        return response()->json(['success' => 'File(s) imported successfully.'], 200);
     }
+    
     
 protected function mapSubjectToCategory($subject)
     {
@@ -307,6 +357,7 @@ protected function mapSubjectToCategory($subject)
                     'chedrix_2025'      => 'CHEDRIX-2025',
                     'o'                 => 'O',
                     'incoming_id'       => $incoming->id,
+                    'quarter'           => $quarter,
                 ]);
     
                 $incoming->outgoing_id = $outgoing->id;

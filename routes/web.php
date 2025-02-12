@@ -100,7 +100,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/cav/local', [CavController::class, 'getLocalCavRecords'])->name('cav.local');
     Route::get('/cav/abroad', [CavController::class, 'getAbroadCavRecords'])->name('cav.abroad');
     Route::resource('heis', HEIController::class);
-    
+    Route::get('/gmail/contacts', [GmailController::class, 'getContacts'])->name('gmail.getContacts');
+    Route::get('/gmail/attachment/{emailId}/{attachmentId}/{filename}', [GmailController::class, 'downloadAttachment'])->name('gmail.downloadAttachment');
+
     Route::post('/cavs/import-csv', [CavController::class, 'importCsv'])->name('cavs.import-csv');
     Route::get('gmail/sent', [GmailController::class, 'listSentEmails'])->name('gmail.sent');
     Route::get('gmail/drafts', [GmailController::class, 'listDraftEmails'])->name('gmail.drafts');

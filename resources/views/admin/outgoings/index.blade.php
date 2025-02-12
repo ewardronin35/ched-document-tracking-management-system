@@ -54,10 +54,25 @@
     .filepond--root {
       margin-top: 1rem;
     }
+    .gray-row {
+  background-color: #e0e0e0 !important;  /* light gray for completely empty rows */
+}
+.green-row {
+  background-color: #ccffcc !important;  /* green for within first day */
+}
+.yellow-row {
+  background-color: #ffffcc !important;  /* yellow for 1–6 days */
+}
+.red-row {
+  background-color: #ffcccc !important;  /* red for 7+ days */
+}
+
+
+
   </style>
 @endpush
 <div class="container-fluid">
-    <!-- Main Tabs: Incomings / Outgoings / Imports & Reports -->
+    <!-- Main Tabs: Incomings / Outgoings / Imports / Reports -->
     <ul class="nav nav-tabs" id="documentTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="incomings-tab" data-bs-toggle="tab" data-bs-target="#incomings"
@@ -72,9 +87,15 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="imports-reports-tab" data-bs-toggle="tab" data-bs-target="#imports-reports"
-                    type="button" role="tab" aria-controls="imports-reports" aria-selected="false">
-                Imports &amp; Reports
+            <button class="nav-link" id="imports-tab" data-bs-toggle="tab" data-bs-target="#imports"
+                    type="button" role="tab" aria-controls="imports" aria-selected="false">
+                Imports
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports"
+                    type="button" role="tab" aria-controls="reports" aria-selected="false">
+                Reports
             </button>
         </li>
     </ul>
@@ -82,7 +103,6 @@
     <div class="tab-content" id="documentTabsContent">
         <!-- Incomings Tab (unchanged) -->
         <div class="tab-pane fade show active pt-3" id="incomings" role="tabpanel" aria-labelledby="incomings-tab">
-            <!-- Your Incomings Card and Handsontable container -->
             <div class="card mb-4">
                 <div class="card-header d-flex align-items-center">
                     <span>Incomings</span>
@@ -92,7 +112,7 @@
             </div>
         </div>
 
-        <!-- Outgoings Tab (unchanged) -->
+        <!-- Outgoings Tab (unchanged with its sub-tabs for Travel Memo & O No.) -->
         <div class="tab-pane fade pt-3" id="outgoings" role="tabpanel" aria-labelledby="outgoings-tab">
             <div class="card mb-4">
                 <div class="card-header d-flex align-items-center">
@@ -146,62 +166,70 @@
             </div>
         </div>
 
-        <!-- Imports & Reports Tab -->
-        <div class="tab-pane fade pt-3" id="imports-reports" role="tabpanel" aria-labelledby="imports-reports-tab">
-            <!-- Subtabs for Imports and Reports -->
-            <ul class="nav nav-tabs" id="importsReportsSubTabs" role="tablist">
+        <!-- Imports Tab: Separate sub-tabs for Incoming Import and Outgoing Import -->
+        <div class="tab-pane fade pt-3" id="imports" role="tabpanel" aria-labelledby="imports-tab">
+            <ul class="nav nav-tabs" id="importsSubTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="imports-tab" data-bs-toggle="tab"
-                            data-bs-target="#imports" type="button" role="tab"
-                            aria-controls="imports" aria-selected="true">
-                        Imports
+                    <button class="nav-link active" id="incoming-import-tab" data-bs-toggle="tab"
+                            data-bs-target="#incoming-import" type="button" role="tab"
+                            aria-controls="incoming-import" aria-selected="true">
+                        Incoming Import
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="reports-tab" data-bs-toggle="tab"
-                            data-bs-target="#reports" type="button" role="tab"
-                            aria-controls="reports" aria-selected="false">
-                        Reports
+                    <button class="nav-link" id="outgoing-import-tab" data-bs-toggle="tab"
+                            data-bs-target="#outgoing-import" type="button" role="tab"
+                            aria-controls="outgoing-import" aria-selected="false">
+                        Outgoing Import
                     </button>
                 </li>
             </ul>
-            <div class="tab-content" id="importsReportsSubTabsContent">
-                <!-- Imports Subtab -->
-                <div class="tab-pane fade show active p-3" id="imports" role="tabpanel" aria-labelledby="imports-tab">
+            <div class="tab-content" id="importsSubTabsContent">
+                <!-- Incoming Import Subtab -->
+                <div class="tab-pane fade show active p-3" id="incoming-import" role="tabpanel" aria-labelledby="incoming-import-tab">
                     <div class="card mb-4">
                         <div class="card-header">
-                            <span>Import Excel Files (CSV, XLS, XLSX)</span>
+                            <span>Import Incoming Excel Files (CSV, XLS, XLSX)</span>
                         </div>
                         <div class="card-body">
-                            <!-- The form action should point to your import route.
-                                 You may have separate forms for Incomings and Outgoings if needed.
-                                 Here we show one example for Incomings. -->
-                            <form id="import-form" method="POST" action="{{ route('admin.incomings.import') }}" enctype="multipart/form-data">
-                                @csrf
-                                <input type="file"
-                                       class="filepond"
-                                       name="filepond"
-                                       id="filepond"
-                                       accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-                                <button type="submit" class="btn btn-primary mt-3">Upload Files</button>
-                            </form>
+                            <input type="file"
+                                   class="filepond"
+                                   name="incoming_filepond"
+                                   id="incoming-filepond"
+                                   accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
                         </div>
                     </div>
                 </div>
-                <!-- Reports Subtab -->
-                <div class="tab-pane fade p-3" id="reports" role="tabpanel" aria-labelledby="reports-tab">
+                <!-- Outgoing Import Subtab -->
+                <div class="tab-pane fade p-3" id="outgoing-import" role="tabpanel" aria-labelledby="outgoing-import-tab">
                     <div class="card mb-4">
                         <div class="card-header">
-                            <span>Reports</span>
+                            <span>Import Outgoing Excel Files (CSV, XLS, XLSX)</span>
                         </div>
                         <div class="card-body">
-                            <!-- Your report generation interface goes here. -->
-                            <p>Report generation functionality can be implemented here.</p>
+                            <input type="file"
+                                   class="filepond"
+                                   name="outgoing_filepond"
+                                   id="outgoing-filepond"
+                                   accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
                         </div>
                     </div>
                 </div>
             </div>
-        </div> <!-- End of Imports & Reports Tab -->
+        </div>
+
+        <!-- Reports Tab (now its own main tab) -->
+        <div class="tab-pane fade pt-3" id="reports" role="tabpanel" aria-labelledby="reports-tab">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <span>Reports</span>
+                </div>
+                <div class="card-body">
+                    <!-- Place your report generation interface here -->
+                    <p>Report generation functionality can be implemented here.</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -210,42 +238,91 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
  <!-- FilePond JS -->
  <script src="https://unpkg.com/filepond/dist/filepond.min.js"></script>
   <!-- FilePond plugin for file type validation -->
   <script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.min.js"></script>
   <script>
-    // Register the plugin if needed
-    FilePond.registerPlugin(FilePondPluginFileValidateType);
+  // Register the FilePond plugin
+  FilePond.registerPlugin(FilePondPluginFileValidateType);
 
-    // Select the file input and create a FilePond instance
-    const inputElement = document.querySelector('input.filepond');
-    FilePond.create(inputElement, {
-      maxFiles: 2,
-      acceptedFileTypes: ['.csv', '.xls', '.xlsx'],
-      labelFileTypeNotAllowed: 'Only Excel files are allowed.',
-      fileValidateTypeLabelExpectedTypes: 'Expects {allButLastType} or {lastType}',
-      server: {
-          process: {
-            url: '{{ route("admin.incomings.import") }}',
-            method: 'POST',
-            headers: {
-              'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            onload: (response) => {
-              // Handle successful response here (for example, reload the page or display a toast)
-              toastr.success('Import successful!');
-              return response;
-            },
-            onerror: (response) => {
-              toastr.error('Error importing file.');
-            }
-          }
-          // You can also add revert, restore, load endpoints if needed.
+  // Initialize FilePond for Incoming Import
+  FilePond.create(document.querySelector('input#incoming-filepond'), {
+    name: 'incoming_filepond',
+    instantUpload: true,
+    allowMultiple: true,
+    maxFiles: 2,
+    acceptedFileTypes: ['.csv', '.xls', '.xlsx'],
+    labelFileTypeNotAllowed: 'Only Excel or CSV files are allowed.',
+    fileValidateTypeLabelExpectedTypes: 'Expects {allButLastType} or {lastType}',
+    server: {
+      process: {
+        url: '{{ route("admin.incomings.import") }}',
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        onload: (response) => {
+          toastr.success('Incoming Import successful!');
+          // Fetch updated incomings data
+          fetch('{{ route("admin.incomings.data") }}')
+            .then(res => res.json())
+            .then(data => {
+              const newData = data.data ? data.data : data;
+              if (window.hotIncomings) {
+                window.hotIncomings.loadData(newData);
+              }
+            })
+            .catch(err => console.error('Error fetching updated incomings:', err));
+          return response;
+        },
+        onerror: (response) => {
+          toastr.error('Error importing incoming file.');
+        }
       }
-    });
-  </script>
+    }
+  });
+
+  // Initialize FilePond for Outgoing Import
+  FilePond.create(document.querySelector('input#outgoing-filepond'), {
+    name: 'outgoing_filepond',
+    instantUpload: true,
+    allowMultiple: true,
+    maxFiles: 2,
+    acceptedFileTypes: ['.csv', '.xls', '.xlsx'],
+    labelFileTypeNotAllowed: 'Only Excel or CSV files are allowed.',
+    fileValidateTypeLabelExpectedTypes: 'Expects {allButLastType} or {lastType}',
+    server: {
+      process: {
+        url: '{{ route("admin.outgoings.import") }}',
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        onload: (response) => {
+          toastr.success('Outgoing Import successful!');
+          // Fetch updated outgoings data
+          fetch('{{ route("admin.outgoings.data") }}')
+            .then(res => res.json())
+            .then(data => {
+              const newData = data.data ? data.data : data;
+              if (window.hotOutgoings) {
+                window.hotOutgoings.loadData(newData);
+              }
+            })
+            .catch(err => console.error('Error fetching updated outgoings:', err));
+          return response;
+        },
+        onerror: (response) => {
+          toastr.error('Error importing outgoing file.');
+        }
+      }
+    }
+  });
+</script>
+
 
 <script>
     const userId = {{ auth()->user()->id ?? 'null' }};
@@ -348,101 +425,148 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   function handleRowRelease(event) {
-    if (!event.target.classList.contains('release-btn')) return;
-    const row = parseInt(event.target.dataset.row, 10);
-    const rowData = hotIncomings.getSourceDataAtRow(row);
-    if (!rowData || !rowData.id) {
-      toastr.error('Cannot release a record without an ID.');
-      return;
-    }
-    if (rowData.date_released) {
-      toastr.info('This incoming record is already released.');
-      return;
-    }
-    if (!confirm('Are you sure you want to release this incoming record?')) return;
-
-    releaseIncoming(row, rowData);
+  if (!event.target.classList.contains('release-btn')) return;
+  const row = parseInt(event.target.dataset.row, 10);
+  const rowData = hotIncomings.getSourceDataAtRow(row);
+  if (!rowData || !rowData.id) {
+    toastr.error('Cannot release a record without an ID.');
+    return;
   }
+  if (rowData.date_released) {
+    toastr.info('This incoming record is already released.');
+    return;
+  }
+  
+  // Use SweetAlert2 instead of the native confirm
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "Do you really want to release this incoming record?",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, release it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      releaseIncoming(row, rowData);
+    }
+  });
+}
 
-  function releaseIncoming(row, rowData) {
-    const incomingId = rowData.id;
-    const today = new Date().toISOString().split('T')[0];
-    const releaseUrl = `/admin/incomings/${incomingId}/release`;
-    const button = containerIncomings.querySelector(`.release-btn[data-row="${row}"]`);
-    if (button) button.disabled = true;
 
-    fetch(releaseUrl, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({ date_released: today })
+
+
+function releaseIncoming(row, rowData) {
+  const incomingId = rowData.id;
+  const today = new Date().toISOString().split('T')[0];
+  const releaseUrl = `/admin/incomings/${incomingId}/release`;
+  const button = containerIncomings.querySelector(`.release-btn[data-row="${row}"]`);
+  if (button) button.disabled = true;
+
+  fetch(releaseUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': '{{ csrf_token() }}',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({ date_released: today })
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(err => { throw err; });
+      }
+      return response.json();
     })
-      .then(response => {
-        if (!response.ok) {
-          return response.json().then(err => { throw err; });
-        }
-        return response.json();
-      })
-      .then(updated => {
-        toastr.success('Incoming record released successfully.');
-        // Update local row
-        hotIncomings.setDataAtRowProp(row, 'date_released', updated.data.date_released, 'internal');
-        highlightRow(hotIncomings, row);
+    .then(updated => {
+      toastr.success('Incoming record released successfully.');
+      // Update the Incomings table with the new release date and highlight the row.
+      hotIncomings.setDataAtRowProp(row, 'date_released', updated.data.date_released, 'internal');
+      updateRowColors(hotIncomings);
 
-        // If a new Outgoing was created, push it
-        if (updated.data.outgoing) {
-          const newOutgoing = updated.data.outgoing;
-          outgoingsData.push({
-            ...newOutgoing,
-            no: String(newOutgoing.id).padStart(4, '0'),
-          });
 
-          // If it's a Travel Order
-          if ((newOutgoing.category || '').toLowerCase() === 'travel order') {
-            travelMemoData.push({
-              ...newOutgoing,
-              no: String(newOutgoing.id).padStart(4, '0'),
-            });
-            if (window.hotTravelMemo) {
-              window.hotTravelMemo.loadData(travelMemoData);
-            }
-          }
+      // Process the new outgoing record, if provided.
+      if (updated.data.outgoing) {
+        const newOutgoing = updated.data.outgoing;
+        console.log("New outgoing record from server:", newOutgoing);
 
-          // If it's an ONO
-          if ((newOutgoing.category || '').toLowerCase() === 'ono') {
-            onoData.push({
-              ...newOutgoing,
-              no: String(newOutgoing.id).padStart(4, '0'),
-            });
-            if (window.hotOno) {
-              window.hotOno.loadData(onoData);
-            }
-          }
+        // Add the new outgoing record to your global outgoingsData array.
+        outgoingsData.push({
+          ...newOutgoing,
+          no: String(newOutgoing.id).padStart(4, '0')
+        });
 
-          // Update All-Outgoings
-          if (window.hotOutgoings) {
-            window.hotOutgoings.loadData(outgoingsData);
-            const newRowIndex = outgoingsData.length - 1;
-            window.hotOutgoings.selectCell(newRowIndex, 0);
-            highlightRow(window.hotOutgoings, newRowIndex);
-          }
-        }
-      })
-      .catch(error => {
-        if (error.errors) {
-          const firstKey = Object.keys(error.errors)[0];
-          toastr.error(error.errors[firstKey].join(' '));
+        const outgoingTabTrigger = document.getElementById('outgoings-tab');
+        if (outgoingTabTrigger) {
+          new bootstrap.Tab(outgoingTabTrigger).show();
+          console.log("Switched to Outgoings tab.");
         } else {
-          toastr.error('Error releasing incoming record.');
+          console.warn("Outgoings tab element not found.");
         }
-      })
-      .finally(() => {
-        if (button) button.disabled = false;
-      });
-  }
+        
+        // Also update sub-tables if the category is "travel order" or "ono"
+        if ((newOutgoing.category || '').toLowerCase() === 'travel order') {
+          travelMemoData.push({
+            ...newOutgoing,
+            no: String(newOutgoing.id).padStart(4, '0')
+          });
+          if (window.hotTravelMemo) {
+            window.hotTravelMemo.loadData(travelMemoData);
+          }
+        } else if ((newOutgoing.category || '').toLowerCase() === 'ono') {
+          onoData.push({
+            ...newOutgoing,
+            no: String(newOutgoing.id).padStart(4, '0')
+          });
+          if (window.hotOno) {
+            window.hotOno.loadData(onoData);
+          }
+        }
+
+        // Now update the Outgoings table.
+        if (window.hotOutgoings) {
+          // Reload the table data from the global outgoingsData array.
+          window.hotOutgoings.loadData(outgoingsData);
+          window.hotOutgoings.render();
+
+          // Wait briefly to ensure the table is rendered.
+          setTimeout(() => {
+            const newOutgoingId = newOutgoing.id;
+            console.log("New outgoing ID:", newOutgoingId);
+            // Find the index of the new outgoing record in outgoingsData.
+            const newRowIndex = outgoingsData.findIndex(item =>
+              parseInt(item.id, 10) === parseInt(newOutgoingId, 10)
+            );
+            console.log("New row index found:", newRowIndex);
+            if (newRowIndex !== -1) {
+              window.hotOutgoings.selectCell(newRowIndex, 0);
+              highlightRow(window.hotOutgoings, newRowIndex);
+            } else {
+              console.warn("New outgoing record not found in outgoingsData.");
+            }
+          }, 1000); // Delay (in milliseconds) to allow the table to render
+        } else {
+          console.warn("Outgoings table instance (hotOutgoings) is not available.");
+        }
+      }
+    })
+    .catch(error => {
+      console.error("Error releasing incoming record:", error);
+      let errorMsg = 'Error releasing incoming record.';
+      if (error.errors) {
+        const firstKey = Object.keys(error.errors)[0];
+        errorMsg += " " + error.errors[firstKey].join(' ');
+      } else if (error.message) {
+        errorMsg += " " + error.message;
+      }
+      toastr.error(errorMsg);
+    })
+    .finally(() => {
+      if (button) {
+        button.disabled = false;
+      }
+    });
+}
 
   if (containerIncomings) {
     const incomingsArray = incomingsData.map(item => ({
@@ -516,7 +640,7 @@ if (isBlank) {
         renderer: hyperlinkRenderer,
         readOnly: true
       },
-      { data: 'date_released',    title: 'Date Released' },
+      { data: 'date_released',    title: 'Date Released'},
       {
         data: null,
         title: 'Actions',
@@ -533,13 +657,20 @@ if (isBlank) {
       columnSorting: true,
       contextMenu: true,
       licenseKey: 'non-commercial-and-evaluation',
+      search: true, // enable search plugin
 
       height: 650,
       maxHeight: 650,
       minSpareRows: 1, // always keep 1 blank row at bottom
 
       columns: incomingsColumns,
-
+      afterRender: function() {
+    updateRowColors(this);
+    setTimeout(() => {
+    updateRowColors(this);
+    this.render(); // force a re-render after meta updates
+  }, 0);
+  },
       afterChange: function(changes, source) {
         console.log("Outgoings afterChange called. Source:", source, "Changes:", changes);
         if (!changes) return;
@@ -698,6 +829,7 @@ const method = hasValidId ? 'PUT' : 'POST';
           if (outgoingTabTrigger) {
             const outgoingTab = new bootstrap.Tab(outgoingTabTrigger);
             outgoingTab.show();
+            console.log("Switched to Outgoings tab.");
 
             setTimeout(() => {
               const rowIndex = outgoingsData.findIndex(item => parseInt(item.id, 10) === parseInt(outgoingId, 10));
@@ -738,7 +870,71 @@ const method = hasValidId ? 'PUT' : 'POST';
 
     window.hotIncomings = hotIncomings;
   }
+  function isRowEmpty(rowData) {
+  if (!rowData) return true;
+  for (const key in rowData) {
+    if (rowData.hasOwnProperty(key)) {
+      if (rowData[key] !== null && rowData[key] !== undefined && rowData[key] !== '') {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+let updatingRowColors = false;
 
+function updateRowColors(hotInstance) {
+  if (updatingRowColors) return;
+  updatingRowColors = true;
+
+  const totalRows = hotInstance.countRows();
+  const totalCols = hotInstance.countCols();
+
+  for (let row = 0; row < totalRows; row++) {
+    // Remove previously set custom classes from each cell in this row.
+    for (let col = 0; col < totalCols; col++) {
+      let meta = hotInstance.getCellMeta(row, col);
+      if (meta.className) {
+        meta.className = meta.className.replace(/\b(gray-row|green-row|yellow-row|red-row)\b/g, '').trim();
+        hotInstance.setCellMeta(row, col, 'className', meta.className);
+      }
+    }
+
+    // Get the row's data.
+    const rowData = hotInstance.getSourceDataAtRow(row);
+    let newClass = "";
+
+    // If the entire row is empty, mark it gray.
+    if (isRowEmpty(rowData)) {
+      newClass = "gray-row";
+    }
+    // Otherwise, if there's a date_received, color based on the elapsed days.
+    else if (rowData.date_received) {
+      const receivedDate = new Date(rowData.date_received);
+      const currentDate = new Date();
+      const diffDays = Math.floor((currentDate - receivedDate) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 1) {
+        newClass = "green-row"; // Less than 1 day
+      } else if (diffDays < 7) {
+        newClass = "yellow-row"; // 1 to 6 days
+      } else {
+        newClass = "red-row"; // 7 days or more
+      }
+    }
+
+    // Apply the computed newClass to every cell in this row.
+    if (newClass) {
+      for (let col = 0; col < totalCols; col++) {
+        let meta = hotInstance.getCellMeta(row, col);
+        meta.className = meta.className ? meta.className + " " + newClass : newClass;
+        hotInstance.setCellMeta(row, col, "className", meta.className);
+      }
+    }
+  }
+  updatingRowColors = false;
+
+}
 
   /* ---------------------------------------------------------------------
    * 2) OUTGOINGS TABLE
@@ -748,7 +944,6 @@ const method = hasValidId ? 'PUT' : 'POST';
 
   if (containerOutgoings) {
     const outgoingsArray = outgoingsData.map(item => ({
-      id:                item.id,
       no:                item.no,
       chedrix_2025:      item.chedrix_2025,
       o:                 item.o,
@@ -817,13 +1012,16 @@ if (blankOutgoing) {
       columnSorting: true,
       contextMenu: true,
       licenseKey: 'non-commercial-and-evaluation',
+      search: true, // enable search plugin
 
       height: 500,
       maxHeight: 500,
       minSpareRows: 1,
 
       columns: outgoingsColumns,
-
+      afterRender: function() {
+    updateRowColors(this);
+  },
       afterChange: function(changes, source) {
         if (!changes) return;
   if (source === 'loadData' || source === 'internal') return;
@@ -1406,6 +1604,38 @@ if (blankOutgoing) {
 
     window.hotOno = hotOno;
   }
+  function customDateRenderer(instance, td, row, col, prop, value, cellProperties) {
+  // Use the standard TextRenderer as a base.
+  Handsontable.renderers.TextRenderer.apply(this, arguments);
+
+  // Get the entire row data.
+  const rowData = instance.getSourceDataAtRow(row);
+  
+  // For an empty row (example: no "No" value) then mark it red.
+  if (!rowData || !rowData.No) {
+    td.style.backgroundColor = "#ffcccc"; // light red background
+    return;
+  }
+
+  // If the record is not yet released, apply a date-based coloring.
+  // (Assume that if date_released is empty, then it is not released.)
+  if (!rowData.date_released && rowData.date_received) {
+    const received = new Date(rowData.date_received);
+    const now = new Date();
+    const diffDays = Math.floor((now - received) / (1000 * 60 * 60 * 24));
+
+    // Apply colors based on the number of days since the record was received.
+    if (diffDays < 1) {
+      td.style.backgroundColor = "#ccffcc"; // green
+    } else if (diffDays < 3) {
+      td.style.backgroundColor = "#ffffcc"; // light yellow
+    } else if (diffDays >= 7) {
+      td.style.backgroundColor = "#ffcccc"; // red
+    } else {
+      td.style.backgroundColor = ""; // no special color
+    }
+  }
+}
 
 
   /* ---------------------------------------------------------------------

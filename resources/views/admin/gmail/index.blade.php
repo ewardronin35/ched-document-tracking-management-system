@@ -5,15 +5,14 @@
 @push('styles')
 <!-- Google Fonts & Bootstrap CSS -->
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome for icons -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <!-- FilePond CSS and Plugins -->
-  <link href="https://unpkg.com/filepond/dist/filepond.css" rel="stylesheet" />
-  <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" rel="stylesheet" />
-  <!-- Optional: Animate.css for transitions -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome for icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<!-- FilePond CSS and Plugins -->
+<link href="https://unpkg.com/filepond/dist/filepond.css" rel="stylesheet" />
+<link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" rel="stylesheet" />
+<!-- Optional: Animate.css for transitions -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 
 <!-- Custom Styles -->
 <style>
@@ -24,6 +23,12 @@
       color: #202124;
       margin: 0;
       padding: 0;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    /* Dark Mode */
+    body.dark-mode {
+      background-color: #121212;
+      color: #e0e0e0;
     }
     /* Top Navbar */
     .navbar {
@@ -31,15 +36,35 @@
       border-bottom: 1px solid #e0e0e0;
       box-shadow: 0 1px 3px rgba(60,64,67,0.15);
       padding: 0.5rem 1rem;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    body.dark-mode .navbar {
+      background-color: #1f1f1f;
+      border-bottom-color: #333;
     }
     .navbar-brand {
       font-weight: 700;
       font-size: 1.5rem;
       color: #202124;
     }
-    .navbar .user-info {
-      font-size: 0.9rem;
-      color: #5f6368;
+    /* Profile Dropdown in Navbar */
+    .profile-picture {
+      width: 32px;
+      height: 32px;
+      object-fit: cover;
+      border: 2px solid #ddd;
+    }
+    body.dark-mode .profile-picture {
+      border-color: #555;
+    }
+    /* Dark mode toggle button */
+    #dark-mode-toggle {
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     /* Sidebar */
     .gmail-sidebar {
@@ -47,6 +72,11 @@
       border-right: 1px solid #e0e0e0;
       min-height: 100vh;
       padding: 20px 10px;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    body.dark-mode .gmail-sidebar {
+      background-color: #1f1f1f;
+      border-right-color: #333;
     }
     .gmail-sidebar .nav-link {
       color: #5f6368;
@@ -62,6 +92,11 @@
       color: #1967d2;
       font-weight: 500;
     }
+    body.dark-mode .gmail-sidebar .nav-link.active,
+    body.dark-mode .gmail-sidebar .nav-link:hover {
+      background-color: #333;
+      color: #90caf9;
+    }
     .gmail-sidebar .section-title {
       font-size: 0.75rem;
       text-transform: uppercase;
@@ -75,11 +110,21 @@
       padding: 20px;
       box-shadow: 0 1px 3px rgba(60,64,67,0.15);
       margin-bottom: 20px;
+      transition: background-color 0.3s;
     }
+    body.dark-mode .email-container {
+      background-color: #1e1e1e;
+    }
+    /* Email List (Inbox) with dark mode background fix */
     .email-list {
       max-height: 600px;
       overflow-y: auto;
       border-right: 1px solid #e0e0e0;
+      background-color: #ffffff;
+    }
+    body.dark-mode .email-list {
+      border-right-color: #333;
+      background-color: #1e1e1e;
     }
     .email-item {
       padding: 15px;
@@ -90,6 +135,10 @@
     .email-item:hover,
     .email-item.active {
       background-color: #e8f0fe;
+    }
+    body.dark-mode .email-item:hover,
+    body.dark-mode .email-item.active {
+      background-color: #333;
     }
     .email-item h6 {
       margin: 0;
@@ -127,6 +176,9 @@
       flex-direction: column;
       animation: fadeInUp 0.4s ease-out;
     }
+    body.dark-mode .compose-modal {
+      background-color: #2c2c2c;
+    }
     @keyframes fadeInUp {
       from { transform: translateY(30px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
@@ -138,6 +190,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+    body.dark-mode .compose-modal-header {
+      background-color: #3a3a3a;
+      border-bottom-color: #555;
     }
     .compose-modal-body {
       padding: 15px;
@@ -167,7 +223,7 @@
     @media (max-width: 991px) {
       .gmail-sidebar { min-height: auto; }
     }
-  </style>
+</style>
 @endpush
 
 @section('content')
@@ -178,10 +234,22 @@
       <i class="fa fa-envelope text-danger me-2"></i>MyChed-Email
     </a>
     <div class="d-flex align-items-center">
-      <span class="user-info me-3 d-none d-md-inline">
-      Logged in as: <strong>{{ Auth::user()->name }}</strong>
-      </span>
-      <a href="{{ route('logout') }}" class="btn btn-sm btn-danger">Log Out</a>
+      <!-- Dark Mode Toggle -->
+      <button id="dark-mode-toggle" class="btn btn-sm btn-outline-secondary me-2">
+        <i class="fa fa-moon"></i>
+      </button>
+      <!-- Profile Dropdown -->
+      <div class="dropdown">
+        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <img class="rounded-circle me-2" src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->name }}" width="32" height="32">
+          <span class="d-none d-sm-inline">{{ Auth::user()->name }}</span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+          <li><a class="dropdown-item" href="{{ route('profile.show') }}">Profile</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{{ route('logout') }}">Log Out</a></li>
+        </ul>
+      </div>
     </div>
   </div>
 </nav>
@@ -278,7 +346,11 @@
     <form action="{{ route('admin.sendEmail') }}" method="POST" enctype="multipart/form-data">
       @csrf
       <div class="mb-2">
-        <input type="email" name="to" id="compose-to" class="form-control" placeholder="To" required autocomplete="off">
+        <!-- Added datalist for auto-complete suggestions -->
+        <input type="email" name="to" id="compose-to" class="form-control" placeholder="To" required autocomplete="off" list="contactList">
+        <datalist id="contactList">
+          <!-- Options will be appended via AJAX -->
+        </datalist>
       </div>
       <div class="mb-2">
         <input type="text" name="subject" id="compose-subject" class="form-control" placeholder="Subject" required>
@@ -287,7 +359,7 @@
         <textarea name="body" id="compose-body" class="form-control" rows="4" placeholder="Message" required></textarea>
       </div>
       <div class="mb-2">
-        <!-- Use FilePond for file uploads -->
+        <!-- File uploads with FilePond -->
         <input type="file" name="attachments[]" id="compose-attachments" class="filepond" multiple>
         <small class="text-muted">Attach files (jpg, png, pdf, doc, etc.)</small>
       </div>
@@ -303,33 +375,49 @@
 @endsection
 
 @push('scripts')
-<!-- Bootstrap Bundle with Popper -->
-<!-- jQuery for AJAX -->
+<!-- jQuery, Bootstrap Bundle, and FilePond JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- FilePond JS and Plugins -->
-  <script src="https://unpkg.com/filepond/dist/filepond.js"></script>
-  <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
-  <script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.js"></script>
-  <script src="https://unpkg.com/filepond-plugin-file-validate-size/dist/filepond-plugin-file-validate-size.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/filepond/dist/filepond.js"></script>
+<script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.js"></script>
+<script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.js"></script>
+<script src="https://unpkg.com/filepond-plugin-file-validate-size/dist/filepond-plugin-file-validate-size.js"></script>
 
 <script>
 $(document).ready(function(){
 
+  // Initialize FilePond
   FilePond.registerPlugin(
       FilePondPluginImagePreview,
       FilePondPluginFileValidateType,
       FilePondPluginFileValidateSize
-    );
-    FilePond.create(document.querySelector('input.filepond'), {
+  );
+  FilePond.create(document.querySelector('input.filepond'), {
       acceptedFileTypes: ['image/*', 'application/pdf', 'application/msword', 'application/vnd.ms-excel'],
       maxFileSize: '2MB'
-    });
-  // Variables for email loading and pagination
+  });
+
+  // Dark mode toggle logic
+  $('#dark-mode-toggle').click(function(){
+    $('body').toggleClass('dark-mode');
+    if($('body').hasClass('dark-mode')){
+      localStorage.setItem('darkMode', 'true');
+      $(this).html('<i class="fa fa-sun"></i>');
+    } else {
+      localStorage.setItem('darkMode', 'false');
+      $(this).html('<i class="fa fa-moon"></i>');
+    }
+  });
+  if(localStorage.getItem('darkMode') === 'true'){
+    $('body').addClass('dark-mode');
+    $('#dark-mode-toggle').html('<i class="fa fa-sun"></i>');
+  }
+
+  // Variables for AJAX email loading and pagination
   var currentCategory = 'inbox';
   var currentPage = 1;
   var totalPages = 1;
-  var emailsPerPage = 10; // Ensure your AJAX endpoint returns 10 emails per page
+  var emailsPerPage = 10;
 
   // Load emails via AJAX
   function loadEmails(category, page = 1) {
@@ -353,7 +441,6 @@ $(document).ready(function(){
         } else {
           emailList.html('<p class="text-center text-muted">No emails found.</p>');
         }
-        // Update pagination controls if provided in the response
         currentPage = response.current_page || 1;
         totalPages = response.last_page || 1;
         updatePagination(totalPages, currentPage);
@@ -368,49 +455,35 @@ $(document).ready(function(){
     var pagination = $('#pagination');
     pagination.empty();
     if(total <= 1) return;
-    // Previous button
     var prevClass = current === 1 ? 'disabled' : '';
     pagination.append(`<li class="page-item ${prevClass}">
         <a class="page-link" href="#" data-page="${current - 1}">Previous</a>
     </li>`);
-    // Page numbers (you can refine to show a subset)
     for(var i = 1; i <= total; i++){
       var activeClass = i === current ? 'active' : '';
       pagination.append(`<li class="page-item ${activeClass}">
           <a class="page-link" href="#" data-page="${i}">${i}</a>
       </li>`);
     }
-    // Next button
     var nextClass = current === total ? 'disabled' : '';
     pagination.append(`<li class="page-item ${nextClass}">
         <a class="page-link" href="#" data-page="${current + 1}">Next</a>
     </li>`);
   }
 
-  // Initially load inbox emails
+  // Initially load emails
   loadEmails(currentCategory);
 
-  // Folder click handler
+  // Category click handler
   $('a.nav-link[data-category]').click(function(e){
-  e.preventDefault();
-  // Remove active class from all category links
-  $('a.nav-link[data-category]').removeClass('active');
-  // Add active class to the clicked link
-  $(this).addClass('active');
-
-  // Get the selected category
-  currentCategory = $(this).data('category');
-  $('#current-category-title').text(
-    currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1)
-  );
-
-  // Load emails for the selected category
-  loadEmails(currentCategory);
-
-  // Reset the email details view
-  $('#email-details').html('<p class="text-center text-muted">Select an email to view its details.</p>');
-});
-
+    e.preventDefault();
+    $('a.nav-link[data-category]').removeClass('active');
+    $(this).addClass('active');
+    currentCategory = $(this).data('category');
+    $('#current-category-title').text(currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1));
+    loadEmails(currentCategory);
+    $('#email-details').html('<p class="text-center text-muted">Select an email to view its details.</p>');
+  });
 
   // Pagination click handler
   $('#pagination').on('click', '.page-link', function(e){
@@ -443,7 +516,7 @@ $(document).ready(function(){
             if(att.isImage && att.url){
               content += `<img src="${att.url}" alt="${att.filename}" class="img-thumbnail me-2 mb-2" style="max-width:200px;">`;
             } else if(att.url){
-              content += `<a href="${att.url}" target="_blank">${att.filename}</a><br>`;
+              content += `<a href="${att.url}" target="_blank" download>${att.filename}</a><br>`;
             }
           });
         }
@@ -465,13 +538,34 @@ $(document).ready(function(){
     });
   });
 
-  // Compose Modal Toggle (floating in bottom-right)
+  // Compose Modal Toggle
   $('#compose-btn').click(function(){
     $('#compose-modal').fadeIn(300);
   });
-  // Allow closing the compose modal via the "×" icon or cancel button
   $('#compose-modal-close, #compose-cancel-btn').click(function(){
     $('#compose-modal').fadeOut(300);
+  });
+
+  // Autofill for Compose "To:" field using AJAX and datalist
+  $('#compose-to').on('input', function(){
+    var query = $(this).val();
+    if(query.length >= 2) { // trigger after at least 2 characters
+      $.ajax({
+        url: '{{ route("admin.gmail.getContacts") }}', // Implement this endpoint to return contacts as JSON: [{name, email}, ...]
+        type: 'GET',
+        data: { query: query },
+        success: function(response){
+          var dataList = $('#contactList');
+          dataList.empty();
+          $.each(response, function(i, contact){
+            dataList.append(`<option value="${contact.email}">${contact.name}</option>`);
+          });
+        },
+        error: function(xhr){
+          console.error('Error fetching contacts', xhr);
+        }
+      });
+    }
   });
 });
 </script>
