@@ -15,6 +15,8 @@ use App\Imports\MajorsImport;
 use Illuminate\Support\Facades\Storage;
 use App\Imports\SoMasterListImport;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\Log;
+use App\Models\AcademicYear;
 
 class SoMasterListController extends Controller
 {
@@ -31,36 +33,36 @@ class SoMasterListController extends Controller
     /**
      * Display a listing of the students.
      */
+
     public function index()
-{
-    $soMasterLists = SoMasterList::with(['program', 'major'])->get();
-    $heis = HEI::all();
-    $heiOptions = HEI::pluck('uii', 'HEIs')->toArray(); // Key: HEI Name, Value: UII
-
-    // Transform the date fields to 'YYYY-MM-DD' for each record
-
-
-    $programs = Programs::all(); 
-    $majors = Majors::all();     
-
-    // Create options arrays for dropdowns
-    $programOptions = $programs->pluck('name', 'id')->toArray();
-    $majorOptions = $majors->pluck('name', 'id')->toArray();
-    $programOptions = $programs->mapWithKeys(function($p) {
-        return [$p->id => [
-            'name' => $p->name,
-            'psced_code' => $p->psced_code
-        ]];
-    })->toArray();
-    $prefix = $this->getCurrentPrefix();
-    if ($prefix === 'admin') {
-        return view('admin.SoMasterList.index', compact('soMasterLists', 'programs', 'majors', 'programOptions', 'majorOptions', 'heiOptions'));
-    } elseif ($prefix === 'records') {
-        return view('records.SoMasterList.index', compact('soMasterLists', 'programs', 'majors', 'programOptions', 'majorOptions'));
-    } else {
-        abort(403, 'Unauthorized access.');
+    {
+        // Retrieve academic years from the database (ordered as needed)
+        $academicYears = AcademicYear::orderBy('year', 'desc')->pluck('year')->toArray();
+    
+        // Existing code for soMasterLists, programs, majors, etc.
+        $soMasterLists = SoMasterList::with(['program', 'major'])->get();
+        $heis = HEI::all();
+        $heiOptions = HEI::pluck('uii', 'HEIs')->toArray();
+        $programs = Programs::all();
+        $majors = Majors::all();
+        $programOptions = $programs->mapWithKeys(function($p) {
+            return [$p->id => [
+                'name' => $p->name,
+                'psced_code' => $p->psced_code
+            ]];
+        })->toArray();
+        $majorOptions = $majors->pluck('name', 'id')->toArray();
+        $prefix = $this->getCurrentPrefix();
+    
+        if ($prefix === 'admin') {
+            return view('admin.SoMasterList.index', compact('soMasterLists', 'programs', 'majors', 'programOptions', 'majorOptions', 'heiOptions', 'academicYears'));
+        } elseif ($prefix === 'records') {
+            return view('records.SoMasterList.index', compact('soMasterLists', 'programs', 'majors', 'programOptions', 'majorOptions', 'academicYears'));
+        } else {
+            abort(403, 'Unauthorized access.');
+        }
     }
-}
+    
 
 
     /**
@@ -86,6 +88,16 @@ class SoMasterListController extends Controller
      */
     public function store(Request $request)
     {
+        $input = $request->all();
+        // Convert empty string to null for program_id and major_id.
+        if (isset($input['program_id']) && $input['program_id'] === '') {
+            $input['program_id'] = null;
+        }
+        if (isset($input['major_id']) && $input['major_id'] === '') {
+            $input['major_id'] = null;
+        }
+        $request->replace($input);
+        
         $this->authorize('create', SoMasterList::class);
 
         // Validate input
@@ -97,8 +109,8 @@ class SoMasterListController extends Controller
             'middle_name' => 'nullable|string|max:255',
             'extension_name' => 'nullable|string|max:255',
             'sex' => 'required|in:Male,Female,Other',
-            'program_id' => 'required|exists:programs,id',
-            'major_id' => 'required|exists:majors,id',
+            'program_id' => 'nullable|exists:programs,id',
+            'major_id' => 'nullable|exists:majors,id',
             'started' => 'required|date',
             'academic_year' => 'required|string|max:50',
             'ended' => 'nullable|date',
@@ -107,7 +119,7 @@ class SoMasterListController extends Controller
             'registrar' => 'nullable|string|max:255',
             'govt_permit_reco' => 'nullable|string|max:255',
             'total' => 'required|integer',
-            'semester' => 'required|integer',
+            'semester' => 'sometimes|required|in:First,Second,Summer',
             'date_of_graduation' => 'nullable|date',
             'semester1_start' => 'nullable|date',
             'semester1_end' => 'nullable|date',
@@ -117,6 +129,7 @@ class SoMasterListController extends Controller
 
         // Create student
         SoMasterList::create($request->all());
+        Log::debug('Incoming request data:', $request->all());
 
         // Redirect based on prefix
         $prefix = $this->getCurrentPrefix();
@@ -163,44 +176,55 @@ class SoMasterListController extends Controller
      * Update the specified student in storage.
      */
     public function update(Request $request, SoMasterList $soMasterList)
-    {
-        $this->authorize('update', $soMasterList);
-    
-        // Validate input with 'sometimes' rules for partial updates
-        $validatedData = $request->validate([
-            'hei_name'             => 'sometimes|required|string|max:255',
-            'hei_uii'              => 'sometimes|required|string|max:255',
-            'last_name'            => 'sometimes|required|string|max:255',
-            'first_name'           => 'sometimes|required|string|max:255',
-            'middle_name'          => 'nullable|string|max:255',
-            'extension_name'       => 'nullable|string|max:255',
-            'sex'                  => 'sometimes|required|in:Male,Female,Other',
-            'program_id'           => 'sometimes|required|exists:programs,id',
-            'major_id'             => 'sometimes|required|exists:majors,id',
-            'started'              => 'sometimes|required|date',
-            'academic_year'        => 'sometimes|required|string|max:50',
-            'ended'                => 'nullable|date',
-            'date_of_application'  => 'sometimes|required|date',
-            'date_of_issuance'     => 'nullable|date',
-            'registrar'            => 'nullable|string|max:255',
-            'govt_permit_reco'     => 'nullable|string|max:255',
-            'total'                => 'sometimes|required|integer',
-            'semester'             => 'sometimes|required|integer',
-            'date_of_graduation'   => 'nullable|date',
-            'semester1_start'      => 'nullable|date',
-            'semester1_end'        => 'nullable|date',
-            'semester2_start'      => 'nullable|date',
-            'semester2_end'        => 'nullable|date',
-        ]);
-    
-        // Update the record with validated data
-        $soMasterList->update($validatedData);
-    
-        $prefix = $this->getCurrentPrefix();
-    
-        return redirect()->route("{$prefix}.so_master_lists.index")
-                         ->with('success', 'Student updated successfully.');
+{
+    $this->authorize('update', $soMasterList);
+
+    // Pre-process input: convert empty strings to null
+    $input = $request->all();
+    if (isset($input['program_id']) && $input['program_id'] === '') {
+        $input['program_id'] = null;
     }
+    if (isset($input['major_id']) && $input['major_id'] === '') {
+        $input['major_id'] = null;
+    }
+    $request->replace($input);
+
+    // Validate input using similar rules as in store()
+    $validatedData = $request->validate([
+        'hei_name'             => 'sometimes|required|string|max:255',
+        'hei_uii'              => 'sometimes|required|string|max:255',
+        'last_name'            => 'sometimes|required|string|max:255',
+        'first_name'           => 'sometimes|required|string|max:255',
+        'middle_name'          => 'nullable|string|max:255',
+        'extension_name'       => 'nullable|string|max:255',
+        'sex'                  => 'sometimes|required|in:Male,Female,Other',
+        'program_id'           => 'nullable|exists:programs,id',
+        'major_id'             => 'nullable|exists:majors,id',
+        'started'              => 'sometimes|required|date',
+        'academic_year'        => 'sometimes|required|string|max:50',
+        'ended'                => 'nullable|date',
+        'date_of_application'  => 'sometimes|required|date',
+        'date_of_issuance'     => 'nullable|date',
+        'registrar'            => 'nullable|string|max:255',
+        'govt_permit_reco'     => 'nullable|string|max:255',
+        'total'                => 'sometimes|required|integer',
+        'semester'             => 'sometimes|required|in:First,Second,Summer',
+        'date_of_graduation'   => 'nullable|date',
+        'semester1_start'      => 'nullable|date',
+        'semester1_end'        => 'nullable|date',
+        'semester2_start'      => 'nullable|date',
+        'semester2_end'        => 'nullable|date',
+    ]);
+
+    // Update the record using validated data
+    $soMasterList->update($validatedData);
+
+    $prefix = $this->getCurrentPrefix();
+
+    return redirect()->route("{$prefix}.so_master_lists.index")
+                     ->with('success', 'Student updated successfully.');
+}
+
     
 
     /**
@@ -220,31 +244,51 @@ class SoMasterListController extends Controller
     }
     public function updateInline(Request $request, SoMasterList $soMasterList)
     {
+        // Pre-process input: convert empty strings for program_id and major_id to null
+        $input = $request->all();
+        if (isset($input['program_id']) && $input['program_id'] === '') {
+            $input['program_id'] = null;
+        }
+        if (isset($input['major_id']) && $input['major_id'] === '') {
+            $input['major_id'] = null;
+        }
+        $request->replace($input);
+    
+        // Validate input. Note that we've added additional rules
+        // for fields that were not previously included.
         $validator = Validator::make($request->all(), [
-            'hei_name'             => 'sometimes|required|string|max:255',
-            'hei_uii'              => 'sometimes|required|string|max:255',
-            'last_name'            => 'sometimes|required|string|max:255',
-            'first_name'           => 'sometimes|required|string|max:255',
-            'middle_name'          => 'nullable|string|max:255',
-            'extension_name'       => 'nullable|string|max:255',
-            'sex'                  => 'sometimes|required|in:Male,Female,Other',
-            'program_id'           => 'sometimes|required|exists:programs,id',
-            'major_id'             => 'sometimes|required|exists:majors,id',
-            'started'              => 'sometimes|required|date',
-            'academic_year'        => 'sometimes|required|string|max:50',
-            'ended'                => 'nullable|date',
-            'date_of_application'  => 'sometimes|required|date',
-            'date_of_issuance'     => 'nullable|date',
-            'registrar'            => 'nullable|string|max:255',
-            'govt_permit_reco'     => 'nullable|string|max:255',
-            'total'                => 'sometimes|required|integer',
-            'semester'             => 'sometimes|required|integer',
-            'date_of_graduation'   => 'nullable|date',
-            'semester1_start'      => 'nullable|date',
-            'semester1_end'        => 'nullable|date',
-            'semester2_start'      => 'nullable|date',
-            'semester2_end'        => 'nullable|date',
-            'psced_code'           => 'sometimes|nullable|string|max:50',
+            'hei_name'                  => 'sometimes|required|string|max:255',
+            'hei_uii'                   => 'sometimes|required|string|max:255',
+            'last_name'                 => 'sometimes|required|string|max:255',
+            'first_name'                => 'sometimes|required|string|max:255',
+            'middle_name'               => 'nullable|string|max:255',
+            'extension_name'            => 'nullable|string|max:255',
+            'sex'                       => 'sometimes|required|in:Male,Female,Other',
+            'program_id'                => 'nullable|exists:programs,id',
+            'major_id'                  => 'nullable|exists:majors,id',
+            'started'                   => 'sometimes|required|date',
+            'academic_year'             => 'sometimes|required|string|max:50',
+            'ended'                     => 'nullable|date',
+            'date_of_application'       => 'sometimes|required|date',
+            'date_of_issuance'          => 'nullable|date',
+            'registrar'                 => 'sometimes|nullable|string|max:255',
+            // Make sure the field name matches your database column:
+            'govt_permit_recognition'   => 'sometimes|nullable|string|max:255',
+            'total'                     => 'sometimes|required|integer',
+            'semester'                  => 'sometimes|required|in:First,Second,Summer',
+            'date_of_graduation'        => 'nullable|date',
+            'semester1_start'           => 'nullable|date',
+            'semester1_end'             => 'nullable|date',
+            'semester2_start'           => 'nullable|date',
+            'semester2_end'             => 'nullable|date',
+            'psced_code'                => 'sometimes|nullable|string|max:50',
+            // Additional fields you wish to update inline:
+            'processing_slip_number'    => 'sometimes|nullable|string|max:255',
+            'region'                    => 'sometimes|nullable|string|max:255',
+            'special_order_number'      => 'sometimes|nullable|string|max:255',
+            'signed_by'                 => 'sometimes|nullable|string|max:255',
+            'academic_year2'            => 'sometimes|nullable|string|max:50',
+            'semester2'                 => 'sometimes|required|in:First,Second,Summer',
         ]);
     
         if ($validator->fails()) {
@@ -255,6 +299,8 @@ class SoMasterListController extends Controller
     
         return response()->json(['success' => 'Data updated successfully.'], 200);
     }
+    
+
     
 
 public function importCsv(Request $request)
@@ -292,8 +338,13 @@ public function getData(Request $request)
 {
     $query = SoMasterList::with(['program', 'major']);
 
+    // If a program filter is provided (by program ID), filter by that
+    if ($request->has('program') && $request->program != '') {
+        $programId = $request->program;
+        $query->where('program_id', $programId);
+    }
+
     return DataTables::of($query)
-        // Convert relevant date columns to 'YYYY-MM-DD'
         ->editColumn('started', function ($row) {
             return $row->started ? \Carbon\Carbon::parse($row->started)->format('Y-m-d') : null;
         })
@@ -309,17 +360,33 @@ public function getData(Request $request)
         ->editColumn('date_of_graduation', function ($row) {
             return $row->date_of_graduation ? \Carbon\Carbon::parse($row->date_of_graduation)->format('Y-m-d') : null;
         })
-
-        // Replace program_id and major_id with their names for display
-        
-        
         ->editColumn('program_id', function ($row) {
             return $row->program ? $row->program->name : '';
         })
         ->editColumn('major_id', function ($row) {
             return $row->major ? $row->major->name : '';
         })
-
+        ->addColumn('status', function ($row) {
+            return $row->status;
+        })
+        ->addColumn('processing_slip_number', function ($row) {
+            return $row->processing_slip_number;
+        })
+        ->addColumn('region', function ($row) {
+            return $row->region;
+        })
+        ->addColumn('special_order_number', function ($row) {
+            return $row->special_order_number;
+        })
+        ->addColumn('signed_by', function ($row) {
+            return $row->signed_by;
+        })
+        ->addColumn('semester2', function ($row) {
+            return $row->semester2;
+        })
+        ->addColumn('academic_year2', function ($row) {
+            return $row->academic_year2;
+        })
         ->addColumn('psced_code', function ($row) {
             return $row->psced_code ?? '';
         })
@@ -334,5 +401,7 @@ public function getData(Request $request)
         ->rawColumns(['actions'])
         ->make(true);
 }
+
+
 
 }

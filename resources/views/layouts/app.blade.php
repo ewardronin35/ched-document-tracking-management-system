@@ -145,7 +145,10 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://apis.google.com/js/platform.js" async defer></script>
     <!-- Bootstrap JS Bundle (Includes Popper) -->
-
+    <script>
+    const userId = {{ auth()->user()->id ?? 'null' }};
+    console.log("Listening for notifications for user: " + userId);
+</script>
     <!-- Blade Stack for Additional Scripts -->
     @stack('scripts')
 

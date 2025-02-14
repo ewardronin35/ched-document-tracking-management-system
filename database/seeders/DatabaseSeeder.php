@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
         $this->call(PermissionSeed::class);
         $this->call(CavPermissionSeeder::class);
         $this->call(RecordRolePermissionSeeder::class);
+        $this->call(AcademicYearsSeeder::class);
+
 
 
         User::factory()->withPersonalTeam()->create([

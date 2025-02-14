@@ -181,9 +181,9 @@
           class="nav-link {{ request()->routeIs('admin.outgoings.*') ? 'active' : '' }}"
           data-bs-toggle="tooltip" 
           data-bs-placement="right" 
-          title="Outgoing"
+          title="Outgoing & Incoming"
         >
-          <i class="fa fa-arrow-up-right-from-square"></i> Outgoing
+          <i class="fa fa-arrow-up-right-from-square"></i> Outgoing & Incoming 
         </a>
       </li>
      @endif
@@ -245,9 +245,9 @@
           class="nav-link {{ request()->routeIs('admin.gmail.*') ? 'active' : '' }}"
           data-bs-toggle="tooltip" 
           data-bs-placement="right" 
-          title="Email History"
+          title="CHED-eMail"
         >
-          <i class="fa fa-envelope"></i> Email History
+          <i class="fa fa-envelope"></i> CHED-eMail
         </a>
       </li>
 

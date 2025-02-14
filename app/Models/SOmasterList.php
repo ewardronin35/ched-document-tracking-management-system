@@ -9,61 +9,76 @@ class SoMasterList extends Model
 {
     use HasFactory;
 
-    protected $table = 'so_master_lists'; // Specify the table name
+    protected $table = 'so_master_lists'; // Make sure this matches your actual table name
 
+    /**
+     * Fillable columns to match your Excel structure.
+     * Rename any column if it differs in your actual DB.
+     */
     protected $fillable = [
+        'status',
+        'processing_slip_number',
+        'region',
         'hei_name',
         'hei_uii',
+        'special_order_number',
         'last_name',
         'first_name',
         'middle_name',
         'extension_name',
         'sex',
+        'total',
         'program_id',
+        'psced_code',
         'major_id',
         'started',
         'ended',
-        'academic_year',
         'date_of_application',
         'date_of_issuance',
         'registrar',
-        'govt_permit_reco',
-        'total',
-        'semester',
+        'govt_permit_recognition',   // renamed from govt_permit_reco
+        'signed_by',                 // "Signed By (Approving Authority)"
+        'semester',                  // first Semester
+        'academic_year',             // first Academic Year
         'date_of_graduation',
-        'semester1_start',
-        'semester1_end',
-        'semester2_start',
-        'semester2_end',
-        'psced_code',  // IMPORTANT: ensure this is included if you use PSCED code
+        'semester2',                 // second Semester (if needed)
+        'academic_year2',            // second Academic Year (if needed)
     ];
 
-    // Relationships
-    
+    /**
+     * Cast columns to proper data types.
+     */
     protected $casts = [
-        'started' => 'date',
-        'ended' => 'date',
+        'started'             => 'date',
+        'ended'               => 'date',
         'date_of_application' => 'date',
-        'date_of_issuance' => 'date',
-        'date_of_graduation' => 'date',
-        'semester1_start' => 'date',
-        'semester1_end' => 'date',
-        'semester2_start' => 'date',
-        'semester2_end' => 'date',
-        'semester' => 'integer',
+        'date_of_issuance'    => 'date',
+        'date_of_graduation'  => 'date',
+
+        // If you store semester as an integer:
+        'semester'  => 'string',
+        'semester2' => 'string',
+
         'total' => 'integer',
     ];
+
+    /**
+     * Relationships
+     */
     public function program()
     {
-        return $this->belongsTo(Programs::class);
+        return $this->belongsTo(Programs::class, 'program_id');
     }
 
     public function major()
     {
-        return $this->belongsTo(Majors::class);
+        return $this->belongsTo(Majors::class, 'major_id');
     }
+
     public function hei()
-{
-    return $this->belongsTo(HEI::class, 'hei_id');
-}
+    {
+        // If you have an 'hei_id' foreign key in your so_master_lists table, 
+        // you can use that. Otherwise, adjust as needed.
+        return $this->belongsTo(HEI::class, 'hei_id');
+    }
 }

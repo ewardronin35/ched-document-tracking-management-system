@@ -324,10 +324,7 @@
 </script>
 
 
-<script>
-    const userId = {{ auth()->user()->id ?? 'null' }};
-    console.log("Listening for notifications for user: " + userId);
-</script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -453,7 +450,68 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 }
 
+let updatingRowColors = false;
 
+function updateRowColors(hotInstance) {
+  if (updatingRowColors) return;
+  updatingRowColors = true;
+
+  const totalRows = hotInstance.countRows();
+  const totalCols = hotInstance.countCols();
+
+  for (let row = 0; row < totalRows; row++) {
+    // First, clear any existing custom color classes on this row.
+    for (let col = 0; col < totalCols; col++) {
+      let meta = hotInstance.getCellMeta(row, col);
+      if (meta.className) {
+        // Remove any of the custom classes.
+        meta.className = meta.className.replace(/\b(gray-row|green-row|yellow-row|red-row)\b/g, '').trim();
+        hotInstance.setCellMeta(row, col, 'className', meta.className);
+      }
+    }
+
+    // Get the row data.
+    const rowData = hotInstance.getSourceDataAtRow(row);
+    let newClass = "";
+    console.log("Row", row, "data:", rowData);
+
+    // If the row is completely empty (user has not filled it), mark it gray.
+    if (isRowEmpty(rowData)) {
+      newClass = "gray-row";
+      console.log("Row", row, "is empty; marking as gray");
+
+    }
+    // Otherwise, if there's a date_received but no date_released...
+    else if (rowData.date_received && !rowData.date_released) {
+      const receivedDate = new Date(rowData.date_received);
+      const currentDate = new Date();
+      const diffDays = Math.floor((currentDate - receivedDate) / (1000 * 60 * 60 * 24));
+      console.log("Row", row, "diffDays:", diffDays);
+
+      // Apply thresholds:
+      // - If less than 1 day has passed, mark green.
+      // - If 1 to less than 7 days have passed, mark yellow.
+      // - If 7 or more days have passed, mark red.
+      if (diffDays < 1) {
+        newClass = "green-row";
+      } else if (diffDays < 7) {
+        newClass = "yellow-row";
+      } else {
+        newClass = "red-row";
+      }
+    }
+
+    // If a class was determined, apply it to every cell in the row.
+    if (newClass) {
+      for (let col = 0; col < totalCols; col++) {
+        let meta = hotInstance.getCellMeta(row, col);
+        meta.className = meta.className ? meta.className + " " + newClass : newClass;
+        hotInstance.setCellMeta(row, col, "className", meta.className);
+      }
+    }
+  }
+  updatingRowColors = false;
+}
 
 
 function releaseIncoming(row, rowData) {
@@ -872,69 +930,17 @@ const method = hasValidId ? 'PUT' : 'POST';
   }
   function isRowEmpty(rowData) {
   if (!rowData) return true;
-  for (const key in rowData) {
-    if (rowData.hasOwnProperty(key)) {
-      if (rowData[key] !== null && rowData[key] !== undefined && rowData[key] !== '') {
-        return false;
-      }
+  // Only check key fields that a user should fill manually
+  const fieldsToCheck = ['reference_number', 'date_received', 'sender_name', 'sender_email', 'subject', 'remarks'];
+  for (let field of fieldsToCheck) {
+    if (rowData[field] && rowData[field].toString().trim() !== '') {
+      return false;
     }
   }
   return true;
 }
-let updatingRowColors = false;
 
-function updateRowColors(hotInstance) {
-  if (updatingRowColors) return;
-  updatingRowColors = true;
 
-  const totalRows = hotInstance.countRows();
-  const totalCols = hotInstance.countCols();
-
-  for (let row = 0; row < totalRows; row++) {
-    // Remove previously set custom classes from each cell in this row.
-    for (let col = 0; col < totalCols; col++) {
-      let meta = hotInstance.getCellMeta(row, col);
-      if (meta.className) {
-        meta.className = meta.className.replace(/\b(gray-row|green-row|yellow-row|red-row)\b/g, '').trim();
-        hotInstance.setCellMeta(row, col, 'className', meta.className);
-      }
-    }
-
-    // Get the row's data.
-    const rowData = hotInstance.getSourceDataAtRow(row);
-    let newClass = "";
-
-    // If the entire row is empty, mark it gray.
-    if (isRowEmpty(rowData)) {
-      newClass = "gray-row";
-    }
-    // Otherwise, if there's a date_received, color based on the elapsed days.
-    else if (rowData.date_received) {
-      const receivedDate = new Date(rowData.date_received);
-      const currentDate = new Date();
-      const diffDays = Math.floor((currentDate - receivedDate) / (1000 * 60 * 60 * 24));
-
-      if (diffDays < 1) {
-        newClass = "green-row"; // Less than 1 day
-      } else if (diffDays < 7) {
-        newClass = "yellow-row"; // 1 to 6 days
-      } else {
-        newClass = "red-row"; // 7 days or more
-      }
-    }
-
-    // Apply the computed newClass to every cell in this row.
-    if (newClass) {
-      for (let col = 0; col < totalCols; col++) {
-        let meta = hotInstance.getCellMeta(row, col);
-        meta.className = meta.className ? meta.className + " " + newClass : newClass;
-        hotInstance.setCellMeta(row, col, "className", meta.className);
-      }
-    }
-  }
-  updatingRowColors = false;
-
-}
 
   /* ---------------------------------------------------------------------
    * 2) OUTGOINGS TABLE
@@ -1020,8 +1026,12 @@ if (blankOutgoing) {
 
       columns: outgoingsColumns,
       afterRender: function() {
+  updateRowColors(this);
+  setTimeout(() => {
     updateRowColors(this);
-  },
+    this.render();
+  }, 0);
+},
       afterChange: function(changes, source) {
         if (!changes) return;
   if (source === 'loadData' || source === 'internal') return;
