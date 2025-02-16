@@ -226,7 +226,25 @@
                 </div>
                 <div class="card-body">
                     <!-- Place your report generation interface here -->
-                    <p>Report generation functionality can be implemented here.</p>
+                    <form action="{{ route('admin.outgoings.report') }}" method="GET">
+    <div class="form-group">
+        <label>Select Document Type:</label>
+        <select name="document_type" class="form-control">
+            <option value="TRAVEL ORDER">Travel Order</option>
+            <option value="ONO">O No.</option>
+            <option value="OTHER">Other</option>
+        </select>
+    </div>
+    <div class="form-group mt-2">
+        <label>Export As:</label>
+        <select name="export_type" class="form-control">
+            <option value="">View Only</option>
+            <option value="excel">Excel</option>
+            <option value="pdf">PDF</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Generate Report</button>
+</form>
                 </div>
             </div>
         </div>

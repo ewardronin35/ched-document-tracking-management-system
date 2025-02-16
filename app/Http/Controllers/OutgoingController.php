@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf; // Ensure you have barryvdh/laravel-dompdf installed
+use App\Exports\OutgoingsExport;
 
 class OutgoingController extends Controller
 {
@@ -418,5 +420,29 @@ class OutgoingController extends Controller
 
         Log::info('Outgoing import completed successfully.');
         return redirect()->route('admin.outgoings.index')->with('success', 'File(s) imported successfully!');
+    }
+        public function generateReport(Request $request)
+    {
+        $request->validate([
+            'document_type' => 'required|string',
+            'export_type' => 'nullable|string|in:pdf,excel'
+        ]);
+
+        $documentType = $request->document_type;
+        $exportType = $request->export_type;
+
+        // Filter Outgoing records by category/document type
+            $outgoings = Outgoing::where('category', $documentType)->get();
+
+            // Export options
+            if ($exportType == 'excel') {
+                return Excel::download(new OutgoingsExport($documentType), "outgoings_report_{$documentType}.xlsx");
+            } elseif ($exportType == 'pdf') {
+                $pdf = Pdf::loadView('reports.outgoings_pdf', compact('outgoings', 'documentType'));
+                return $pdf->download("outgoings_report_{$documentType}.pdf");
+            }
+
+        // If no export type, just show data in the view
+        return view('reports.outgoings', compact('outgoings', 'documentType'));
     }
 }

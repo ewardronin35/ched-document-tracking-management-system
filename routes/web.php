@@ -93,7 +93,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
     Route::post('gmail/send', [GmailController::class, 'sendEmail'])->name('sendEmail');
     Route::get('gmail/emails', [GmailController::class, 'listEmails'])->name('gmail.emails');
-    
+    Route::get('/outgoings/report', [OutgoingController::class, 'generateReport'])->name('outgoings.report');
+
     Route::post('heis/import', [HEIController::class, 'import'])->name('heis.import');
     Route::get('heis/import', [HEIController::class, 'showImportForm'])->name('heis.import.form');
     Route::get('/emails', [GmailController::class, 'listEmails'])->name('gmail.emails');

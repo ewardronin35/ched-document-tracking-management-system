@@ -303,16 +303,18 @@ class SoMasterListController extends Controller
 
     
 
-public function importCsv(Request $request)
-{
-    $request->validate([
-        'csv_file' => 'required|file|mimes:csv,txt|max:2048',
-    ]);
-
-    Excel::import(new SoMasterListImport, $request->file('csv_file'));
-
-    return redirect()->route('admin.so_master_lists.index')->with('success', 'CSV imported successfully!');
-}
+    public function importCsv(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt,xlsx,xls|max:60000',
+        ]);
+    
+        // Dispatch the import job (Runs in the background)
+        Excel::import(new SoMasterListImport, $request->file('csv_file'));
+    
+        return redirect()->route('admin.so_master_lists.index')
+                         ->with('success', 'CSV import started! The data will be available soon.');
+    }
 public function importPrograms(Request $request)
 {
     $request->validate([
@@ -327,7 +329,7 @@ public function importPrograms(Request $request)
 public function importMajors(Request $request)
 {
     $request->validate([
-        'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+        'csv_file' => 'required|file|mimes:csv,txt,xlsx,xls|max:2048',
     ]);
 
     Excel::import(new MajorsImport, $request->file('csv_file'));

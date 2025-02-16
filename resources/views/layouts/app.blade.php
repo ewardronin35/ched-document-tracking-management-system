@@ -142,7 +142,7 @@
 
     <!-- jQuery (Required for Bootstrap JS and DataTables) -->
 
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://apis.google.com/js/platform.js" async defer></script>
     <!-- Bootstrap JS Bundle (Includes Popper) -->
     <script>
