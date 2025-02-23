@@ -172,7 +172,7 @@ class IncomingController extends Controller
         }
     
         $validated = $request->validate([
-            'reference_number' => 'required|string',
+            'reference_number' => 'nullable|string',
             'chedrix_2025'     => 'nullable|string',
             'location'         => 'nullable|string',
             'No'               => 'required|string',

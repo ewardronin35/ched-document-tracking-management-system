@@ -59,15 +59,20 @@ class DocumentController extends Controller
     }
     public function index(Request $request)
     {
-        // Get authenticated user
+        // Auto‑archive: update documents older than 30 days (if not already archived)
+        Document::where('status', '!=', 'Archived')
+            ->whereDate('created_at', '<', Carbon::now()->subDays(30))
+            ->update(['status' => 'Archived']);
+    
+        // Get the authenticated user
         $user = auth()->user();
     
         // Start query with eager loading
         $query = Document::with(['user', 'routedUser']);
     
-        // ✅ Ensure Admin, Records, and RegionalDirector see ALL documents
+        // For admins, Records, and Regional Directors see all documents;
+        // others see only documents routed to them or created by them.
         if (!$user->hasRole(['admin', 'Records', 'RegionalDirector'])) {
-            // Other roles only see documents routed to them
             $query->where(function ($q) use ($user) {
                 $q->where('routed_to', $user->id)
                   ->orWhereHas('user', function ($subQuery) use ($user) {
@@ -76,33 +81,49 @@ class DocumentController extends Controller
             });
         }
     
-        // Apply filters if available
+        // Apply filters if provided
         if ($request->filled('id')) {
             $query->where('id', $request->input('id'));
         }
-    
         if ($request->filled('document_type')) {
             $query->where('document_type', $request->input('document_type'));
         }
-    
         if ($request->filled('status')) {
             if ($request->input('status') === 'today') {
                 $query->whereDate('created_at', Carbon::today());
+            } elseif ($request->input('status') === 'Archived') {
+                // Return only archived documents (updated above)
+                $query->where('status', 'Archived');
             } else {
                 $query->where('status', $request->input('status'));
             }
         }
     
-        // Order by approval_status and created_at
+        // Additional "3‑7‑20 Day Rule" logic (optional)
+        // For example, if your Document model has a field 'transaction_complexity' with possible values:
+        // 'Simple', 'Complex', 'Highly Technical', then you can flag overdue items:
+        $query->get()->each(function($doc) {
+            $daysOpen = Carbon::parse($doc->created_at)->diffInDays(Carbon::now());
+            if ($doc->transaction_complexity === 'Simple' && $daysOpen > 3) {
+                // You might set a flag or update a field, e.g.,
+                $doc->overdue = true;
+            } elseif ($doc->transaction_complexity === 'Complex' && $daysOpen > 7) {
+                $doc->overdue = true;
+            } elseif ($doc->transaction_complexity === 'Highly Technical' && $daysOpen > 20) {
+                $doc->overdue = true;
+            }
+        });
+    
+        // Order by a custom sort order (for example, Pending first, then Accepted, then Rejected)
         $query->orderByRaw("CASE 
-                            WHEN approval_status = 'Pending' THEN 0 
-                            WHEN approval_status = 'Accepted' THEN 1 
-                            WHEN approval_status = 'Rejected' THEN 2 
-                            ELSE 3 END")
+                                WHEN approval_status = 'Pending' THEN 0 
+                                WHEN approval_status = 'Accepted' THEN 1 
+                                WHEN approval_status = 'Rejected' THEN 2 
+                                ELSE 3 END")
               ->orderBy('created_at', 'desc');
     
-        // ✅ Retrieve documents
-        $documents = $query->paginate(50); // Increase the number of items to verify data
+        // Retrieve documents (with pagination or as needed)
+        $documents = $query->paginate(50);
         $users = User::orderBy('name')->get();
     
         // ✅ Ensure correct views are returned based on role
@@ -634,30 +655,26 @@ public function getDocuments(Request $request)
     $user = auth()->user();
     $query = Document::with(['user', 'routedUser']);
 
-    // If the user is not an admin, Records, or RegionalDirector, limit documents
     if (!$user->hasRole(['admin', 'Records', 'RegionalDirector'])) {
         $query->where('routed_to', $user->id);
     }
 
-    // Apply the status filter from the request
     if ($request->filled('status') && $request->input('status') !== '') {
         if ($request->input('status') === 'today') {
             $query->whereDate('created_at', Carbon::today());
+        } elseif ($request->input('status') === 'Archived') {
+            $query->where('status', 'Archived');
         } else {
             $query->where('status', $request->input('status'));
         }
     }
 
-    // Optionally, apply the role filter if needed
     if ($request->filled('role') && $request->input('role') !== '') {
-        // Example: assuming your Document model has a relationship with User and
-        // the role is stored on the User model. Adjust accordingly.
         $query->whereHas('user', function ($q) use ($request) {
             $q->where('role', $request->input('role'));
         });
     }
 
-    // Return the results in DataTables format
     return DataTables::of($query)
         ->addColumn('checkbox', fn($doc) => '<input type="checkbox" name="doc_ids[]" value="' . $doc->id . '" />')
         ->addColumn('routed_to', fn($doc) => $doc->routedUser ? $doc->routedUser->name : 'Not Assigned')
@@ -679,16 +696,7 @@ public function getDocuments(Request $request)
         })
         ->editColumn('status_details', function ($doc) {
             $details = json_decode($doc->status_details, true);
-            if (is_array($details)) {
-                $message   = $details['message']   ?? 'No message';
-                $remarks   = $details['remarks']   ?? 'No remarks';
-                $timestamp = $details['timestamp'] ?? 'No timestamp';
-        
-                // Customize the formatting as needed.
-                return "Message: {$message}";
-            }
-            // Fallback if JSON is not valid
-            return $doc->status_details;
+            return is_array($details) ? "Message: " . ($details['message'] ?? 'No message') : $doc->status_details;
         })
         ->rawColumns(['checkbox', 'actions', 'routed_to'])
         ->make(true);

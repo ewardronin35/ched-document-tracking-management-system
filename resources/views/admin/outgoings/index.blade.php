@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+  
   <!-- FilePond CSS -->
   <link href="https://unpkg.com/filepond/dist/filepond.min.css" rel="stylesheet">
   <!-- (Optional) FilePond plugin for file type validation -->
@@ -33,7 +34,7 @@
     #handsontable-incomings,
     #handsontable-travel-memo,
     #handsontable-ono {
-      max-height: 650px;
+      max-height: 750px;
       overflow: auto;
     }
     .release-btn {
@@ -67,104 +68,117 @@
   background-color: #ffcccc !important;  /* red for 7+ days */
 }
 
-
+.custom-tabs .nav-link {
+  border-radius: 20px;
+  margin-right: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f0f0f0;
+  color: #333;
+}
+.custom-tabs .nav-link.active {
+  background-color: #007bff;
+  color: #fff;
+}
+.custom-tabs .nav-link i {
+  margin-right: 0.3rem;
+}
 
   </style>
 @endpush
 <div class="container-fluid">
     <!-- Main Tabs: Incomings / Outgoings / Imports / Reports -->
-    <ul class="nav nav-tabs" id="documentTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="incomings-tab" data-bs-toggle="tab" data-bs-target="#incomings"
-                    type="button" role="tab" aria-controls="incomings" aria-selected="true">
-                Incomings
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="outgoings-tab" data-bs-toggle="tab" data-bs-target="#outgoings"
-                    type="button" role="tab" aria-controls="outgoings" aria-selected="false">
-                Outgoings
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="imports-tab" data-bs-toggle="tab" data-bs-target="#imports"
-                    type="button" role="tab" aria-controls="imports" aria-selected="false">
-                Imports
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports"
-                    type="button" role="tab" aria-controls="reports" aria-selected="false">
-                Reports
-            </button>
-        </li>
-    </ul>
+    <ul class="nav nav-tabs custom-tabs" id="documentTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a class="nav-link active" id="incomings-tab" data-bs-toggle="tab" href="#incomings" role="tab" aria-controls="incomings" aria-selected="true">
+        <i class="fas fa-inbox"></i> Incomings
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="outgoings-tab" data-bs-toggle="tab" href="#outgoings" role="tab" aria-controls="outgoings" aria-selected="false">
+        <i class="fas fa-paper-plane"></i> Outgoings
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="imports-tab" data-bs-toggle="tab" href="#imports" role="tab" aria-controls="imports" aria-selected="false">
+        <i class="fas fa-upload"></i> Imports
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="reports-tab" data-bs-toggle="tab" href="#reports" role="tab" aria-controls="reports" aria-selected="false">
+        <i class="fas fa-chart-line"></i> Reports
+      </a>
+    </li>
+  </ul>
+
 
     <div class="tab-content" id="documentTabsContent">
         <!-- Incomings Tab (unchanged) -->
         <div class="tab-pane fade show active pt-3" id="incomings" role="tabpanel" aria-labelledby="incomings-tab">
             <div class="card mb-4">
-                <div class="card-header d-flex align-items-center">
-                    <span>Incomings</span>
-                    <input type="text" id="search-incomings" class="form-control ms-3 search-field" placeholder="Search Incomings">
-                </div>
+              
                 <div id="handsontable-incomings" wire:ignore style="overflow-x:auto;"></div>
             </div>
         </div>
 
-        <!-- Outgoings Tab (unchanged with its sub-tabs for Travel Memo & O No.) -->
-        <div class="tab-pane fade pt-3" id="outgoings" role="tabpanel" aria-labelledby="outgoings-tab">
-            <div class="card mb-4">
-                <div class="card-header d-flex align-items-center">
-                    <span>All Outgoings</span>
-                    <input type="text" id="search-outgoings" class="form-control ms-3 search-field" placeholder="Search Outgoings">
-                </div>
-                <div id="handsontable-outgoings" wire:ignore style="overflow-x:auto;"></div>
-            </div>
-            <!-- Subtabs for Travel Memo & O No. -->
-            <ul class="nav nav-tabs" id="outgoingsSubTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="travel-memo-tab" data-bs-toggle="tab"
-                            data-bs-target="#travel-memo" type="button" role="tab"
-                            aria-controls="travel-memo" aria-selected="true">
-                        Travel Memo
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="ono-tab" data-bs-toggle="tab"
-                            data-bs-target="#ono" type="button" role="tab"
-                            aria-controls="ono" aria-selected="false">
-                        O No. DATE OF RELEASED
-                    </button>
-                </li>
-            </ul>
-            <div class="tab-content" id="outgoingsSubTabsContent">
-                <!-- Travel Memo Subtab -->
-                <div class="tab-pane fade show active p-3" id="travel-memo" role="tabpanel" aria-labelledby="travel-memo-tab">
-                    <div class="card mb-4">
-                        <div class="card-header d-flex align-items-center">
-                            <span>Travel Memo</span>
-                            <input type="text" id="search-travel-memo" class="form-control ms-3 search-field" placeholder="Search Travel Memo">
-                        </div>
-                        <div class="card-body">
-                            <div id="handsontable-travel-memo" wire:ignore style="overflow-x:auto;"></div>
-                        </div>
-                    </div>
-                </div>
-                <!-- O No. Subtab -->
-                <div class="tab-pane fade p-3" id="ono" role="tabpanel" aria-labelledby="ono-tab">
-                    <div class="card mb-4">
-                        <div class="card-header d-flex align-items-center">
-                            <span>O No. DATE OF RELEASED</span>
-                            <input type="text" id="search-ono" class="form-control ms-3 search-field" placeholder="Search O No.">
-                        </div>
-                        <div class="card-body">
-                            <div id="handsontable-ono" wire:ignore style="overflow-x:auto;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+   <!-- Outgoings Tab -->
+<div class="tab-pane fade pt-3" id="outgoings" role="tabpanel" aria-labelledby="outgoings-tab">
+  <!-- Sub-tabs as button-style pills with icons -->
+  <ul class="nav nav-pills custom-tabs" id="outgoingsSubTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <a class="nav-link active" id="all-outgoings-tab" data-bs-toggle="pill" href="#all-outgoings" role="tab" aria-controls="all-outgoings" aria-selected="true">
+        Outgoings
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="travel-memo-tab" data-bs-toggle="pill" href="#travel-memo" role="tab" aria-controls="travel-memo" aria-selected="false">
+        <i class="fas fa-plane"></i> Travel Memo
+      </a>
+    </li>
+    <li class="nav-item" role="presentation">
+      <a class="nav-link" id="ono-tab" data-bs-toggle="pill" href="#ono" role="tab" aria-controls="ono" aria-selected="false">
+        <i class="fas fa-file-alt"></i> O No. DATE OF RELEASED
+      </a>
+    </li>
+  </ul>
+  
+  <div class="tab-content mt-3" id="outgoingsSubTabsContent">
+    <!-- All Outgoings Sub-tab -->
+    <div class="tab-pane fade show active" id="all-outgoings" role="tabpanel" aria-labelledby="all-outgoings-tab">
+      <div class="card mb-4">
+       
+        <div id="handsontable-outgoings" wire:ignore style="overflow-x:auto;"></div>
+      </div>
+    </div>
+    <!-- Travel Memo Sub-tab -->
+    <div class="tab-pane fade" id="travel-memo" role="tabpanel" aria-labelledby="travel-memo-tab">
+      <div class="card mb-4">
+        <div class="card-header d-flex align-items-center">
+          <i class="fas fa-plane me-2"></i>
+          <span>Travel Memo</span>
+          <input type="text" id="search-travel-memo" class="form-control ms-3 search-field" placeholder="Search Travel Memo">
         </div>
+        <div class="card-body">
+          <div id="handsontable-travel-memo" wire:ignore style="overflow-x:auto;"></div>
+        </div>
+      </div>
+    </div>
+    <!-- O No. Sub-tab -->
+    <div class="tab-pane fade" id="ono" role="tabpanel" aria-labelledby="ono-tab">
+      <div class="card mb-4">
+        <div class="card-header d-flex align-items-center">
+          <i class="fas fa-file-alt me-2"></i>
+          <span>O No. DATE OF RELEASED</span>
+          <input type="text" id="search-ono" class="form-control ms-3 search-field" placeholder="Search O No.">
+        </div>
+        <div class="card-body">
+          <div id="handsontable-ono" wire:ignore style="overflow-x:auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
         <!-- Imports Tab: Separate sub-tabs for Incoming Import and Outgoing Import -->
         <div class="tab-pane fade pt-3" id="imports" role="tabpanel" aria-labelledby="imports-tab">
@@ -342,14 +356,34 @@
 </script>
 
 
-
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-
   function debugLog(msg) {
     console.log("[Handsontable Debug]", msg);
   }
 
+  function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+  var outgoingsSubTabs = document.getElementById('outgoingsSubTabs');
+  if (outgoingsSubTabs) {
+    outgoingsSubTabs.addEventListener('shown.bs.tab', function(e) {
+      var targetId = e.target.getAttribute("data-bs-target");
+      // Depending on which sub-tab was activated, re-render the Handsontable instance.
+      if (targetId === "#all-outgoings" && window.hotOutgoings) {
+        window.hotOutgoings.render();
+      } else if (targetId === "#travel-memo" && window.hotTravelMemo) {
+        window.hotTravelMemo.render();
+      } else if (targetId === "#ono" && window.hotOno) {
+        window.hotOno.render();
+      }
+    });
+  }
   /* ---------------------------------------------------------------------
    * FETCH DATA from Blade
    * ------------------------------------------------------------------- */
@@ -357,6 +391,106 @@ document.addEventListener("DOMContentLoaded", function() {
   const incomingsData   = @json($incomings ?? []);
   const travelMemoData  = @json($travelMemos ?? []);
   const onoData         = @json($onoOutgoings ?? []);
+  function combinedTimeRenderer(instance, td, row, col, prop, value, cellProperties) {
+  // 1. Determine and set the background color using your incoming logic.
+  const rowData = instance.getSourceDataAtRow(row);
+  let bgColor = "";
+  if (rowData) {
+    // Check if row is empty (based on key fields)
+    const fieldsToCheck = ['reference_number', 'date_received', 'sender_name', 'sender_email', 'subject', 'remarks'];
+    const isEmpty = fieldsToCheck.every(field => !rowData[field] || rowData[field].toString().trim() === "");
+    if(isEmpty) {
+      bgColor = "#e0e0e0"; // Light gray for completely empty rows.
+    } else if (rowData.date_received && !rowData.date_released) {
+      const receivedDate = new Date(rowData.date_received);
+      const now = new Date();
+      const diffDays = Math.floor((now - receivedDate) / (1000 * 60 * 60 * 24));
+      // New thresholds:
+      // 0 to 1 day -> green
+      // 2 to 5 days -> yellow
+      // 6 days and up -> red
+      if(diffDays <= 1) {
+        bgColor = "#ccffcc"; // green
+      } else if(diffDays >= 2 && diffDays <= 5) {
+        bgColor = "#ffffcc"; // yellow
+      } else if(diffDays >= 6) {
+        bgColor = "#ffcccc"; // red
+      }
+    }
+  }
+  if (bgColor) {
+    td.style.backgroundColor = bgColor;
+  }
+
+  // 2. Format the time value into 12-hour format.
+  let formattedValue = value;
+  if (value) {
+    // Assume the stored value is in 24-hour format (e.g. "14:30" or "14:30:00")
+    const time = moment(value, ["HH:mm:ss", "HH:mm"]);
+    if (time.isValid()) {
+      formattedValue = time.format("h:mm A");
+    }
+  }
+  
+  // 3. Render the cell text.
+  Handsontable.renderers.TextRenderer.apply(this, arguments);
+  td.innerText = formattedValue;
+}
+
+// Renderer for incoming rows (for all columns except special ones)
+function incomingRowRenderer(instance, td, row, col, prop, value, cellProperties) {
+  // Call the default text renderer first.
+  Handsontable.renderers.TextRenderer.apply(this, arguments);
+
+  // Get the entire row's data.
+  const rowData = instance.getSourceDataAtRow(row);
+  if (!rowData) return;
+
+  let bgColor = "";
+  
+  // Check if the row is "empty" based on key fields.
+  const fieldsToCheck = ['reference_number', 'date_received', 'sender_name', 'sender_email', 'subject', 'remarks'];
+  const isEmpty = fieldsToCheck.every(field => !rowData[field] || rowData[field].toString().trim() === "");
+  
+  if(isEmpty) {
+    bgColor = "#e0e0e0"; // Light gray if the row is completely empty.
+  } else if (rowData.date_received && !rowData.date_released) {
+    // Calculate days since received.
+    const receivedDate = new Date(rowData.date_received);
+    const now = new Date();
+    const diffDays = Math.floor((now - receivedDate) / (1000 * 60 * 60 * 24));
+    // New thresholds:
+    // 0 to 1 day   -> green
+    // 2 to 5 days  -> yellow
+    // 6 days and up -> red
+    if(diffDays <= 1) {
+      bgColor = "#ccffcc"; // green
+    } else if(diffDays >= 2 && diffDays <= 5) {
+      bgColor = "#ffffcc"; // yellow
+    } else if(diffDays >= 6) {
+      bgColor = "#ffcccc"; // red
+    }
+  }
+  
+  if(bgColor) {
+    td.style.backgroundColor = bgColor;
+  }
+}
+
+// Custom time renderer to convert 24h time to 12h time with AM/PM.
+function timeRenderer(instance, td, row, col, prop, value, cellProperties) {
+  let formattedValue = value;
+  if (value) {
+    // Assume value is in a standard 24h format ("HH:mm:ss" or "HH:mm")
+    // Use moment.js (make sure it is included) to convert to 12h format.
+    var time = moment(value, ["HH:mm:ss", "HH:mm"]);
+    if (time.isValid()) {
+      formattedValue = time.format("h:mm A");
+    }
+  }
+  Handsontable.renderers.TextRenderer.apply(this, arguments);
+  td.innerText = formattedValue;
+}
 
 
   /* ---------------------------------------------------------------------
@@ -407,17 +541,20 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   function highlightRow(hotInstance, rowIndex) {
-    clearHighlights(hotInstance);
-    const colCount = hotInstance.countCols();
-    for (let col = 0; col < colCount; col++) {
-      const meta = hotInstance.getCellMeta(rowIndex, col);
-      const existingClass = meta.className || '';
-      if (!existingClass.includes('highlightedRow')) {
-        hotInstance.setCellMeta(rowIndex, col, 'className', existingClass + ' highlightedRow');
-      }
+  // Clear existing highlights without triggering render each time.
+  clearHighlights(hotInstance);
+  const colCount = hotInstance.countCols();
+  for (let col = 0; col < colCount; col++) {
+    let meta = hotInstance.getCellMeta(rowIndex, col);
+    const existingClass = meta.className || '';
+    if (!existingClass.includes('highlightedRow')) {
+      hotInstance.setCellMeta(rowIndex, col, 'className', existingClass + ' highlightedRow');
     }
-    hotInstance.render();
   }
+  // Call render only once after all cells are updated.
+  hotInstance.render();
+}
+
 
 
   /* ---------------------------------------------------------------------
@@ -425,7 +562,19 @@ document.addEventListener("DOMContentLoaded", function() {
    * ------------------------------------------------------------------- */
   const containerIncomings = document.getElementById('handsontable-incomings');
   let hotIncomings = null;
-
+  const outgoingsSubTabsLinks = document.querySelectorAll('#outgoingsSubTabs .nav-link');
+    outgoingsSubTabsLinks.forEach(link => {
+      link.addEventListener('shown.bs.tab', function(e) {
+        const target = e.target.getAttribute('href'); // e.g., "#travel-memo"
+        if (target === "#all-outgoings" && window.hotOutgoings) {
+          window.hotOutgoings.render();
+        } else if (target === "#travel-memo" && window.hotTravelMemo) {
+          window.hotTravelMemo.render();
+        } else if (target === "#ono" && window.hotOno) {
+          window.hotOno.render();
+        }
+      });
+    });
   // Release Button Renderer
   function releaseButtonRenderer(instance, td, row, col, prop, value) {
     Handsontable.dom.empty(td);
@@ -469,7 +618,6 @@ document.addEventListener("DOMContentLoaded", function() {
 }
 
 let updatingRowColors = false;
-
 function updateRowColors(hotInstance) {
   if (updatingRowColors) return;
   updatingRowColors = true;
@@ -478,48 +626,34 @@ function updateRowColors(hotInstance) {
   const totalCols = hotInstance.countCols();
 
   for (let row = 0; row < totalRows; row++) {
-    // First, clear any existing custom color classes on this row.
+    // Clear previous classes for each cell in this row.
     for (let col = 0; col < totalCols; col++) {
       let meta = hotInstance.getCellMeta(row, col);
       if (meta.className) {
-        // Remove any of the custom classes.
         meta.className = meta.className.replace(/\b(gray-row|green-row|yellow-row|red-row)\b/g, '').trim();
         hotInstance.setCellMeta(row, col, 'className', meta.className);
       }
     }
 
-    // Get the row data.
+    // Determine the new class based on the row data.
     const rowData = hotInstance.getSourceDataAtRow(row);
     let newClass = "";
-    console.log("Row", row, "data:", rowData);
-
-    // If the row is completely empty (user has not filled it), mark it gray.
     if (isRowEmpty(rowData)) {
       newClass = "gray-row";
-      console.log("Row", row, "is empty; marking as gray");
-
-    }
-    // Otherwise, if there's a date_received but no date_released...
-    else if (rowData.date_received && !rowData.date_released) {
+    } else if (rowData.date_received && !rowData.date_released) {
       const receivedDate = new Date(rowData.date_received);
       const currentDate = new Date();
       const diffDays = Math.floor((currentDate - receivedDate) / (1000 * 60 * 60 * 24));
-      console.log("Row", row, "diffDays:", diffDays);
-
-      // Apply thresholds:
-      // - If less than 1 day has passed, mark green.
-      // - If 1 to less than 7 days have passed, mark yellow.
-      // - If 7 or more days have passed, mark red.
-      if (diffDays < 1) {
-        newClass = "green-row";
-      } else if (diffDays < 7) {
-        newClass = "yellow-row";
-      } else {
+      if (diffDays >= 7) {
         newClass = "red-row";
+      } else if (diffDays >= 3) {
+        newClass = "yellow-row";
+      } else if (diffDays >= 1) {
+        newClass = "green-row";
       }
     }
 
-    // If a class was determined, apply it to every cell in the row.
+    // Apply the new class to every cell in the row.
     if (newClass) {
       for (let col = 0; col < totalCols; col++) {
         let meta = hotInstance.getCellMeta(row, col);
@@ -529,6 +663,7 @@ function updateRowColors(hotInstance) {
     }
   }
   updatingRowColors = false;
+  // DO NOT call hotInstance.render() here to avoid triggering another afterRender cycle.
 }
 
 
@@ -620,7 +755,7 @@ function releaseIncoming(row, rowData) {
             } else {
               console.warn("New outgoing record not found in outgoingsData.");
             }
-          }, 1000); // Delay (in milliseconds) to allow the table to render
+          }, 1500); // Delay (in milliseconds) to allow the table to render
         } else {
           console.warn("Outgoings table instance (hotOutgoings) is not available.");
         }
@@ -693,36 +828,76 @@ if (isBlank) {
   const maxNo = allNoValues.length ? Math.max(...allNoValues) : 0;
   lastIncomingRow.No = String(maxNo + 1).padStart(4, '0');
 }
-    const incomingsColumns = [
-      { data: 'quarter',          title: 'Quarter', renderer: quarterLabelRenderer, readOnly: true },
-      { data: 'chedrix_2025',     title: 'CHEDRIX 2025' },
-      { data: 'location',         title: 'Location', type: 'dropdown', source: ['e', 'm/zc', 'm/pag'] },
-      { data: 'No',               title: 'No.' },
-      { data: 'reference_number', title: 'Reference #' },
-      { data: 'date_received',    title: 'Date Received' },
-      { data: 'time_emailed',     title: 'Time Emailed' },
-      { data: 'sender_name',      title: 'Sender Name' },
-      { data: 'sender_email',     title: 'Sender Email' },
-      { data: 'subject',          title: 'Subject' },
-      { data: 'remarks',          title: 'Remarks' },
-      { data: 'date_time_routed', title: 'Date Routed' },
-      { data: 'routed_to',        title: 'Routed To' },
-      { data: 'date_acted_by_es', title: 'Date Acted by ES' },
-      { data: 'outgoing_details', title: 'Outgoing Details' },
-      { data: 'year',             title: 'Year' },
-      {
-        data: 'outgoing_id',
-        title: 'Outgoing ID',
-        renderer: hyperlinkRenderer,
-        readOnly: true
-      },
-      { data: 'date_released',    title: 'Date Released'},
-      {
-        data: null,
-        title: 'Actions',
-        renderer: releaseButtonRenderer
-      }
-    ];
+const incomingsColumns = [
+  { 
+    data: 'quarter',          
+    title: 'Quarter', 
+    renderer: function(instance, td, row, col, prop, value, cellProperties) {
+      incomingRowRenderer(instance, td, row, col, prop, value, cellProperties);
+      quarterLabelRenderer(instance, td, row, col, prop, value, cellProperties);
+    }, 
+    readOnly: true 
+  },
+  { data: 'chedrix_2025', title: 'CHEDRIX 2025', renderer: incomingRowRenderer },
+  { 
+    data: 'location',         
+    title: 'Location', 
+    type: 'dropdown', 
+    source: ['e', 'm/zc', 'm/pag'],
+    renderer: incomingRowRenderer 
+  },
+  { data: 'No', title: 'No.', renderer: incomingRowRenderer },
+  { data: 'reference_number', title: 'Reference #', renderer: incomingRowRenderer },
+  { 
+    data: 'date_received',    
+    title: 'Date Received', 
+    type: 'date',           // Use the built-in date editor
+    dateFormat: 'YYYY-MM-DD',
+    correctFormat: true,
+    renderer: incomingRowRenderer 
+  },
+  { 
+  data: 'time_emailed', 
+  title: 'Time Emailed', 
+  type: 'text',
+  renderer: combinedTimeRenderer,
+  validator: function(value, callback) {
+    // Validate time in 12-hour format (e.g., "2:30 PM")
+    var time = moment(value, "h:mm A", true);
+    callback(time.isValid());
+  }
+},
+
+  { data: 'sender_name', title: 'Sender Name', renderer: incomingRowRenderer },
+  { data: 'sender_email', title: 'Sender Email', renderer: incomingRowRenderer },
+  { data: 'subject', title: 'Subject', renderer: incomingRowRenderer },
+  { data: 'remarks', title: 'Remarks', renderer: incomingRowRenderer },
+  { data: 'date_time_routed', title: 'Date Routed', type: 'date', dateFormat: 'YYYY-MM-DD', correctFormat: true, renderer: incomingRowRenderer },
+  { data: 'routed_to', title: 'Routed To', renderer: incomingRowRenderer },
+  { data: 'date_acted_by_es', title: 'Date Acted by ES', type: 'date', dateFormat: 'YYYY-MM-DD', correctFormat: true, renderer: incomingRowRenderer },
+  { data: 'outgoing_details', title: 'Outgoing Details', renderer: incomingRowRenderer },
+  { data: 'year', title: 'Year', renderer: incomingRowRenderer },
+  {
+    data: 'outgoing_id',
+    title: 'Outgoing ID',
+    renderer: hyperlinkRenderer,
+    readOnly: true
+  },
+  { 
+    data: 'date_released',    
+    title: 'Date Released', 
+    type: 'date', 
+    dateFormat: 'YYYY-MM-DD', 
+    correctFormat: true, 
+    renderer: incomingRowRenderer 
+  },
+  {
+    data: null,
+    title: 'Actions',
+    renderer: releaseButtonRenderer
+  }
+];
+
 
     hotIncomings = new Handsontable(containerIncomings, {
       data: incomingsArray,
@@ -735,8 +910,7 @@ if (isBlank) {
       licenseKey: 'non-commercial-and-evaluation',
       search: true, // enable search plugin
 
-      height: 650,
-      maxHeight: 650,
+      height: 750,
       minSpareRows: 1, // always keep 1 blank row at bottom
 
       columns: incomingsColumns,
@@ -1038,8 +1212,8 @@ if (blankOutgoing) {
       licenseKey: 'non-commercial-and-evaluation',
       search: true, // enable search plugin
 
-      height: 500,
-      maxHeight: 500,
+      height: 700,
+      maxHeight: 700,
       minSpareRows: 1,
 
       columns: outgoingsColumns,

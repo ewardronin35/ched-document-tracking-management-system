@@ -177,8 +177,8 @@
 
       <li class="nav-item mb-1">
         <a 
-          href="{{ route('admin.outgoings.index') }}" 
-          class="nav-link {{ request()->routeIs('admin.outgoings.*') ? 'active' : '' }}"
+          href="{{ route($role.'.outgoings.index') }}"
+          class="nav-link {{ request()->routeIs($role.'.outgoings.*') ? 'active' : '' }}"
           data-bs-toggle="tooltip" 
           data-bs-placement="right" 
           title="Outgoing & Incoming"

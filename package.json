@@ -17,6 +17,7 @@
         "handsontable": "^15.0.0",
         "hyperformula": "^2.7.1",
         "laravel-echo": "^1.19.0",
-        "pusher-js": "^8.4.0"
+        "pusher-js": "^8.4.0",
+        "toastr": "^2.1.4"
     }
 }

@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Fortify\Contracts\LoginResponse;
 use Laravel\Fortify\Contracts\FailedLoginResponse;
 use Laravel\Fortify\Contracts\LogoutResponse;
+use App\Models\AuditLog;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -103,22 +104,37 @@ class FortifyServiceProvider extends ServiceProvider
         });
         // Custom authentication logic with flash message on success
         Fortify::authenticateUsing(function (Request $request) {
-            // Sanitize and validate input here if needed (Fortify handles basic validation already).
+            // 1. Look up user by email
             $user = User::where('email', $request->email)->first();
+        
+            // 2. Check if the user exists, can_login is true, and password is correct
+            if ($user && $user->can_login && Hash::check($request->password, $user->password)) {
 
-            if ($user && Hash::check($request->password, $user->password)) {
-                // Flash success message to the session
+                AuditLog::create([
+                    'user_id'    => $user->id,
+                    'event_type' => 'login',
+                    'description'=> 'User logged in successfully.',
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                ]);
+
                 session()->flash('success', 'You have successfully logged in!');
-                // Log the login event for auditing
                 Log::info('User Logged In:', ['email' => $user->email]);
                 return $user;
             }
-
-            // If authentication fails, Fortify will handle redirection back with errors.
-            session()->flash('error', 'Invalid credentials.');
-
+        
+            // 3. If user is found but cannot log in
+            if ($user && !$user->can_login) {
+                session()->flash('error', 'Your account is currently disabled by an administrator.');
+            } else {
+                // Otherwise, it's just invalid credentials
+                session()->flash('error', 'Invalid credentials.');
+            }
+        
+            // 4. Return null to indicate login failure
             return null;
         });
+        
 
     }
 }

@@ -10,6 +10,8 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Hei;      // Assuming there's an Hei model for HEI records
 use App\Models\Programs;  // Assuming there's a Program model for Program records
+use App\Imports\MultiSheetCavImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class CavController extends Controller
 {
@@ -22,12 +24,12 @@ class CavController extends Controller
      */
     public function index()
     {
-        // Determine prefix for view (existing logic)
-        $prefix = $this->getCurrentPrefix();
-
         // Fetch dropdown options from related models
         $heiOptions = Hei::pluck('HEIs')->toArray();
         $programOptions = Programs::pluck('name')->toArray();
+
+        // Determine prefix for view (for admin vs. records, etc.)
+        $prefix = request()->routeIs('admin.*') ? 'admin' : 'records';
 
         if ($prefix === 'admin') {
             return view('admin.cav.index', compact('heiOptions', 'programOptions'));
@@ -37,65 +39,17 @@ class CavController extends Controller
             abort(403, 'Unauthorized access.');
         }
     }
+    public function data()
+    {
+        // For example, if you have a Cav model that holds your records:
+        $data = \App\Models\CavsOsd::all(); // or use appropriate filtering/ordering
 
+        return response()->json($data);
+    }
     /**
      * Handle AJAX request for DataTables.
      */
-    public function getCavs(Request $request)
-    {
-        $cavs = Cav::select('id', 'cav_no', 'full_name_of_hei', 'program_name', 'status_of_the_program', 'date_applied')->get();
-
-        return DataTables::of($cavs)
-            ->addColumn('status_badge', function($cav) {
-                // Customize based on 'status_of_the_program'
-                switch(strtolower($cav->status_of_the_program)) {
-                    case 'completed':
-                        return '<span class="badge badge-status-completed">'.ucfirst($cav->status_of_the_program).'</span>';
-                    case 'pending':
-                        return '<span class="badge badge-status-pending">'.ucfirst($cav->status_of_the_program).'</span>';
-                    case 'cancelled':
-                        return '<span class="badge badge-status-cancelled">'.ucfirst($cav->status_of_the_program).'</span>';
-                    default:
-                        return '<span class="badge bg-secondary">'.ucfirst($cav->status_of_the_program).'</span>';
-                }
-            })
-            ->addColumn('actions', function($cav) {
-                logger($cav); // Check if $cav->id exists
-
-                $buttons = '';
-
-                // View Button
-                if (Auth::user()->can('cav.view')) {
-                    $buttons .= '<button class="btn btn-sm btn-info me-1 view-cav-btn" data-cav-id="'.$cav->id.'" title="View CAV" data-bs-toggle="tooltip" data-bs-placement="top">
-                                    <i class="fas fa-eye"></i>
-                                  </button>';
-                }
-
-                // Edit Button
-                if (Auth::user()->can('cav.edit')) {
-                    $buttons .= '<a href="'.route('admin.cav.edit', $cav->id).'" class="btn btn-sm btn-warning me-1" title="Edit CAV" data-bs-toggle="tooltip" data-bs-placement="top">
-                                    <i class="fas fa-edit"></i>
-                                  </a>';
-                }
-
-                // Delete Button
-                if (Auth::user()->can('cav.delete')) {
-                    $buttons .= '<form action="'.route('admin.cav.destroy', $cav->id).'" method="POST" style="display:inline-block;">
-                                    '.csrf_field().'
-                                    '.method_field('DELETE').'
-                                    <button type="submit" class="btn btn-sm btn-danger me-1" title="Delete CAV" data-bs-toggle="tooltip" data-bs-placement="top" onclick="return confirm(\'Are you sure you want to delete this CAV?\');">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                  </form>';
-                }
-                
-
-                return $buttons;
-            })
-            ->rawColumns(['status_badge', 'actions']) // Allow HTML in these columns
-            ->make(true);
-    }
-
+ 
     /**
      * Show the form for creating a new resource.
      */
@@ -126,15 +80,15 @@ class CavController extends Controller
 
         // Validation
         $validator = Validator::make($request->all(), [
-            'cav_no' => 'required|string|max:255',
-            'region' => 'required|string|max:255',
-            'surname' => 'required|string|max:255',
-            'first_name' => 'required|string|max:255',
+            'cav_no' => 'nullable|string|max:255',
+            'region' => 'nullable|string|max:255',
+            'surname' => 'nullable|string|max:255',
+            'first_name' => 'nullable|string|max:255',
             'extension_name' => 'nullable|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'sex' => 'required|in:Male,Female',
-            'institution_code' => 'required|string|max:255',
-            'full_name_of_hei' => 'required|string|max:255',
+            'sex' => 'nullable|in:Male,Female',
+            'institution_code' => 'nullable|string|max:255',
+            'full_name_of_hei' => 'nullable|string|max:255',
             'address_of_hei' => 'nullable|string|max:255',
             'official_receipt_number' => 'nullable|string|max:255',
             'type_of_heis' => 'nullable|string|max:255',
@@ -228,15 +182,15 @@ class CavController extends Controller
     {
         // Validation
         $validator = Validator::make($request->all(), [
-            'cav_no' => 'required|string|max:255',
-            'region' => 'required|string|max:255',
-            'surname' => 'required|string|max:255',
-            'first_name' => 'required|string|max:255',
+            'cav_no' => 'nullable|string|max:255',
+            'region' => 'nullable|string|max:255',
+            'surname' => 'nullable|string|max:255',
+            'first_name' => 'nullable|string|max:255',
             'extension_name' => 'nullable|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'sex' => 'required|in:Male,Female',
-            'institution_code' => 'required|string|max:255',
-            'full_name_of_hei' => 'required|string|max:255',
+            'sex' => 'nullable|in:Male,Female',
+            'institution_code' => 'nullable|string|max:255',
+            'full_name_of_hei' => 'nullable|string|max:255',
             'address_of_hei' => 'nullable|string|max:255',
             'official_receipt_number' => 'nullable|string|max:255',
             'type_of_heis' => 'nullable|string|max:255',
@@ -318,32 +272,20 @@ class CavController extends Controller
         $abroadRecords = Cav::where('target_country', '!=', 'Philippines')->get();
         return response()->json($abroadRecords);
     }
-    public function importCsv(Request $request) {
-        // Validate file presence
+   
+    public function importExcel(Request $request)
+    {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt|max:10240' // limit size as needed
+            'file' => 'required|file|mimes:xlsx,xls'
         ]);
     
-        $path = $request->file('file')->getRealPath();
-    
-        // Use a library for chunking if needed or manually process
-        if (($handle = fopen($path, 'r')) !== false) {
-            // Skip header row if present
-            fgetcsv($handle);
-    
-            while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-                // Process each row, optionally batching data for faster insertion
-                Cav::create([
-                  'cav_no' => $row[0] ?? null,
-                  'region' => $row[1] ?? null,
-                  // ... map remaining columns appropriately, using null if missing
-                ]);
-            }
-    
-            fclose($handle);
+        try {
+            Excel::import(new MultiSheetCavImport, $request->file('file'));
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Excel import error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-    
-        return response()->json(['success' => true]);
     }
     
 }

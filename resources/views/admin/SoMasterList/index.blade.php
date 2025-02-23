@@ -70,24 +70,40 @@
     </style>
 @endpush
 
-@if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-
-@if($errors->any())
-    <div class="alert alert-danger">
-        <ul class="mb-0">
-            @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
 <div class="excel-toolbar mb-3">
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importCsvModal">Import CSV</button>
-    <button class="btn btn-secondary" onclick="window.location.href='{{ route('admin.programs.index') }}'">View Programs</button>
-    <button class="btn btn-secondary" onclick="window.location.href='{{ route('admin.majors.index') }}'">View Majors</button>
+<ul class="nav nav-tabs mb-3" id="soMasterTabs" role="tablist">
+
+<!-- SO Masterlist Tab -->
+<li class="nav-item" role="presentation">
+    <button class="nav-link active" id="so-records-tab" data-bs-toggle="tab" data-bs-target="#so-records" type="button" role="tab">
+        <i class="fa fa-table"></i> SO Masterlist
+    </button>
+</li>
+
+<!-- Import CSV Tab (Modal Trigger) -->
+<li class="nav-item" role="presentation">
+    <button class="nav-link" id="import-tab" data-bs-toggle="modal" data-bs-target="#importCsvModal" type="button">
+        <i class="fa fa-upload"></i> Import CSV
+    </button>
+</li>
+
+<!-- View Programs (Direct Link) -->
+<li class="nav-item" role="presentation">
+    <a href="{{ route('admin.programs.index') }}" class="nav-link" id="programs-tab">
+        <i class="fa fa-list"></i> View Programs
+    </a>
+</li>
+
+<!-- View Majors (Direct Link) -->
+<li class="nav-item" role="presentation">
+    <a href="{{ route('admin.majors.index') }}" class="nav-link" id="majors-tab">
+        <i class="fa fa-book"></i> View Majors
+    </a>
+</li>
+
+
+</ul>
+
 
     <div class="form-group mb-3">
   <label for="programFilter">Filter by Program:</label>
@@ -411,7 +427,7 @@ $(document).ready(function () {
     className: 'htHorizonLight',
     stretchH: 'all',
     width: '100%',
-    height: 600,
+    height: 750,
     minSpareRows: 1,
     licenseKey: 'non-commercial-and-evaluation',
     dropdownMenu: true,

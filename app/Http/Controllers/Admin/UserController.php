@@ -30,11 +30,14 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with(['roles', 'permissions'])->paginate(10);
-        $roles = Role::all();
-        return view('admin.manage-users.index', compact('users', 'roles'));
+        $users       = \App\Models\User::with(['roles', 'permissions'])->paginate(10);
+        $roles       = \Spatie\Permission\Models\Role::all();
+        $gmailTokens = \App\Models\GmailToken::with('user')->get();
+        $auditLogs   = \App\Models\AuditLog::with('user')->latest()->paginate(10);
+    
+        return view('admin.manage-users.index', compact('users', 'roles', 'gmailTokens', 'auditLogs'));
     }
-
+    
     /**
      * Show the form for creating a new user.
      *
@@ -272,6 +275,26 @@ class UserController extends Controller
             'user_permissions' => $userPermissions,
         ]);
     }
+/**
+ * Toggle the can_login flag for a given user.
+ *
+ * @param  int  $id
+ * @return \Illuminate\Http\RedirectResponse
+ */
+public function toggleLoginEligibility($id)
+{
+    $user = User::findOrFail($id);
+
+    // Flip the boolean
+    $user->can_login = ! $user->can_login;
+    $user->save();
+
+    // Optionally provide a message
+    $status = $user->can_login ? 'enabled' : 'disabled';
+    return redirect()
+        ->route('admin.manage.users.index')
+        ->with('success', "User {$user->name} login eligibility is now {$status}.");
+}
 
     /**
      * Update user permissions.

@@ -2,9 +2,16 @@
 
 namespace App\Http;
 
-use Illuminate\Foundation\Http\Kernel as HttpKernel;
-
-class Kernel extends HttpKernel
+use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use App\Models\Incoming;
+use App\Models\Outgoing;
+use App\Models\User;
+use App\Notifications\UnfilledRowsNotification;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+class Kernel extends ConsoleKernel
 {
     /**
      * The application's global HTTP middleware stack.
@@ -71,4 +78,34 @@ class Kernel extends HttpKernel
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,  
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,  
     ];
+    protected function schedule(Schedule $schedule)
+{
+    // For testing purposes, run every minute:
+    $schedule->call(function () {
+        $unfilledIncomingCount = Incoming::where(function($q) {
+            $q->whereNull('sender_name')
+              ->orWhere('sender_name', '');
+        })->count();
+
+        $unfilledOutgoingCount = Outgoing::where(function($q) {
+            $q->whereNull('addressed_to')
+              ->orWhere('addressed_to', '');
+        })->count();
+
+        if ($unfilledIncomingCount > 0 || $unfilledOutgoingCount > 0) {
+            $message = "Reminder: You have {$unfilledIncomingCount} unfilled incoming row(s) and {$unfilledOutgoingCount} unfilled outgoing row(s).";
+            
+            $admins = User::role('admin')->get();
+            Notification::send($admins, new UnfilledRowsNotification($message));
+        }
+        Log::info('Scheduled task triggered at ' . now());
+
+    })->everyMinute();
+}
+
+protected function commands()
+{
+    $this->load(__DIR__.'/Commands');
+    require base_path('routes/console.php');
+}
 }

@@ -2,20 +2,26 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Cav extends Model
+class CavsOsd extends Model
 {
-    // Table name
-    protected $table = '_c_a_v';
+    use HasFactory;
 
-    public $timestamps = false;
+    /**
+     * The table associated with the model.
+     */
+    protected $table = 'cavs_osd';
 
-    // Fillable attributes
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [
         'quarter',
-        'cav_no',
-        'region',
+        'o',
+        'seq',
+        'cav_osds',
         'surname',
         'first_name',
         'extension_name',
@@ -24,7 +30,6 @@ class Cav extends Model
         'institution_code',
         'full_name_of_hei',
         'address_of_hei',
-        'official_receipt_number',
         'type_of_heis',
         'discipline_code',
         'program_name',
@@ -36,12 +41,11 @@ class Cav extends Model
         'graduation_date',
         'units_earned',
         'special_order_no',
-        'series',
         'date_applied',
         'date_released',
-        'airway_bill_no',
-        'serial_number_of_security_paper',
         'purpose_of_cav',
         'target_country',
+        'semester',
+        'academic_year',
     ];
 }

@@ -421,28 +421,32 @@ class OutgoingController extends Controller
         Log::info('Outgoing import completed successfully.');
         return redirect()->route('admin.outgoings.index')->with('success', 'File(s) imported successfully!');
     }
-        public function generateReport(Request $request)
+    public function generateReport(Request $request)
     {
         $request->validate([
             'document_type' => 'required|string',
-            'export_type' => 'nullable|string|in:pdf,excel'
+            'export_type'   => 'nullable|string|in:pdf,excel'
         ]);
-
+    
         $documentType = $request->document_type;
         $exportType = $request->export_type;
-
-        // Filter Outgoing records by category/document type
-            $outgoings = Outgoing::where('category', $documentType)->get();
-
-            // Export options
-            if ($exportType == 'excel') {
-                return Excel::download(new OutgoingsExport($documentType), "outgoings_report_{$documentType}.xlsx");
-            } elseif ($exportType == 'pdf') {
-                $pdf = Pdf::loadView('reports.outgoings_pdf', compact('outgoings', 'documentType'));
-                return $pdf->download("outgoings_report_{$documentType}.pdf");
-            }
-
-        // If no export type, just show data in the view
+    
+        // Fetch data
+        $outgoings = Outgoing::where('category', $documentType)->get();
+    
+        // Export logic
+        if ($exportType === 'excel') {
+            return Excel::download(new OutgoingsExport($documentType), "outgoings_report_{$documentType}.xlsx");
+        } elseif ($exportType === 'pdf') {
+            $pdf = Pdf::loadView('reports.outgoings_pdf', compact('outgoings', 'documentType'))
+                      ->setPaper('letter', 'portrait');
+            return $pdf->download("outgoings_report_{$documentType}.pdf");
+        }
+    
+        // Return the HTML view if not exporting
         return view('reports.outgoings', compact('outgoings', 'documentType'));
     }
+    
+    
+    
 }

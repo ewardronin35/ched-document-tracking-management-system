@@ -16,8 +16,6 @@ use Illuminate\Support\Facades\Log;
 
 // Example: Only allow the user to listen to their own private channel.
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
-    Log::info("Authenticating user {$user->id} for channel {$id}");
-
-    // For debugging, allow all authenticated users to subscribe.
-    return true;
+    return (int)$user->id === (int)$id;
 });
+

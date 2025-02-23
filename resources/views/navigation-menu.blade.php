@@ -1,3 +1,14 @@
+@php
+    // Count unread notifications for dynamic tooltip and display
+    $unreadCount = auth()->user()->unreadNotifications()->count();
+
+    // Show recent notifications (e.g., limit to 5). Adjust query as needed.
+    $recentNotifications = auth()->user()->notifications()
+        ->latest()
+        ->take(5)
+        ->get();
+@endphp
+
 <div>
   <!-- Navigation Bar -->
   <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #133A86; border-bottom: 1px solid #ccc;">
@@ -35,26 +46,78 @@
 
       <!-- Right Section: Notification & Profile Icons -->
       <ul class="navbar-nav align-items-center">
-    <!-- Notification Icon (bell) -->
-    <li class="nav-item dropdown me-3 d-flex align-items-center">
-        <a 
-            class="nav-link dropdown-toggle d-flex align-items-center" 
+        <!-- Notification Icon (bell) -->
+        <li class="nav-item dropdown me-3 d-flex align-items-center">
+          <a 
+            class="nav-link dropdown-toggle d-flex align-items-center"
             href="#" 
             id="notificationDropdown" 
             role="button" 
             data-bs-toggle="dropdown" 
             aria-expanded="false"
-        >
-            <i class="fa fa-bell bell-animated"></i>
-            <!-- Optional Notification Counter -->
-            <span id="notificationCount" class="badge bg-danger ms-1">
-    {{ auth()->user()->unreadNotifications()->count() }}
-</span>
-        </a>
-        <!-- Animated dropdown: include your notifications partial -->
-        @include('layouts.partials.notifications')
-    </li>
+          >
+            <!-- Bell icon with ring animation and tooltip -->
+            <i 
+              class="fa fa-bell bell-animated"
+              data-bs-toggle="tooltip"
+              data-bs-placement="bottom"
+              {{-- We'll set the dynamic title in a script below --}}
+            ></i>
 
+            <!-- Notification Counter (only show if we have unread notifications) -->
+            @if($unreadCount > 0)
+              <span id="notificationCount" class="badge bg-danger ms-1">
+                {{ $unreadCount }}
+              </span>
+            @endif
+          </a>
+
+          <!-- Dropdown notifications -->
+          <div class="dropdown-menu custom-dropdown" aria-labelledby="notificationDropdown" style="min-width: 300px;">
+            <!-- Mark All as Read (only if there are unread notifications) -->
+            @if($unreadCount > 0)
+              <form action="#" method="POST" class="p-2">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-link text-danger">
+                  Mark All as Read
+                </button>
+              </form>
+              <hr class="my-0">
+            @endif
+
+            @if($recentNotifications->count())
+              <div class="list-group" style="max-height: 300px; overflow-y: auto;">
+                @foreach($recentNotifications as $notification)
+                  <a 
+                    href="{{ route('notifications.show', $notification->id) }}" 
+                    class="list-group-item list-group-item-action d-flex align-items-center"
+                  >
+                    <!-- Icon based on the notification status -->
+                    @if(isset($notification->data['status']) && $notification->data['status'] === 'Rejected')
+                      <i class="fa fa-times text-danger me-2"></i>
+                    @else
+                      <i class="fa fa-check text-success me-2"></i>
+                    @endif
+                    <div>
+                      <strong>{{ $notification->data['tracking_number'] ?? 'No Tracking' }}</strong>
+                      <div>{{ $notification->data['message'] ?? '' }}</div>
+                      <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                    </div>
+                  </a>
+                @endforeach
+              </div>
+
+              <!-- Optional link to a "View All Notifications" page -->
+              <div class="text-center p-2">
+                <a href="#" class="btn btn-sm btn-light">
+                  View All Notifications
+                </a>
+              </div>
+            @else
+              <div class="p-2 text-center">No notifications</div>
+            @endif
+          </div>
+        </li>
 
         <!-- Profile Icon/Photo -->
         <li class="nav-item dropdown">
@@ -66,31 +129,29 @@
             data-bs-toggle="dropdown" 
             aria-expanded="false"
           >
-            @php
-              $roles = Auth::user()->getRoleNames();
+            @php 
+              $roles = Auth::user()->getRoleNames(); 
             @endphp
+
             @if(Auth::user()->profile_photo_url)
-              <!-- User photo -->
               <img 
-                class="rounded-circle me-2" 
-                src="{{ Auth::user()->profile_photo_url }}" 
-                alt="{{ Auth::user()->name }}" 
-                width="32" 
+                class="rounded-circle me-2"
+                src="{{ Auth::user()->profile_photo_url }}"
+                alt="{{ Auth::user()->name }}"
+                width="32"
                 height="32"
               >
             @else
-              <!-- Fallback icon -->
               <i class="fa fa-user me-2"></i>
             @endif
             <span>{{ Auth::user()->name }}</span>
-            
+
             @if($roles->isNotEmpty())
               <small style="color: #fff;">({{ $roles->first() }})</small>
             @endif
           </a>
-          <!-- Animated dropdown -->
           <ul class="dropdown-menu dropdown-menu-end fade" aria-labelledby="profileDropdown">
-          <li>
+            <li>
               <a class="dropdown-item" href="{{ route('profile.show') }}">
                 Profile
               </a>
@@ -114,6 +175,7 @@
       </ul>
     </div>
   </nav>
+  
   <div id="sidebarOverlay" class="overlay" style="display: none;"></div>
 
   <!-- Sidebar Toggle & Overlay Script -->
@@ -122,27 +184,26 @@
     document.addEventListener("DOMContentLoaded", function () {
       const toggleBtn = document.getElementById('sidebarToggle');
       const logoutForm = document.getElementById('logoutForm');
+      const sidebar = document.querySelector('.sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
 
-    const sidebar = document.querySelector('.sidebar');
-    const overlay = document.getElementById('sidebarOverlay'); // if you want to show/hide the overlay
-    toggleBtn.addEventListener('click', () => {
-      // 1) Toggle the .open class
-      sidebar.classList.toggle('open');
-
-      // 2) Show the overlay if the sidebar is open
-      if (sidebar.classList.contains('open')) {
-        overlay.style.display = 'block';
-      } else {
-        overlay.style.display = 'none';
+      // Toggle sidebar (for smaller screens)
+      if(toggleBtn && sidebar) {
+        toggleBtn.addEventListener('click', () => {
+          sidebar.classList.toggle('open');
+          overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+        });
       }
-    });
 
-    // Hide the sidebar and overlay if the user clicks on the overlay
-    overlay.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      overlay.style.display = 'none';
-    });
+      // Hide sidebar if overlay clicked
+      if(overlay) {
+        overlay.addEventListener('click', () => {
+          sidebar.classList.remove('open');
+          overlay.style.display = 'none';
+        });
+      }
 
+      // Logout confirmation
       if (logoutForm) {
         logoutForm.addEventListener('submit', function (e) {
           e.preventDefault(); // Prevent immediate form submission
@@ -169,8 +230,24 @@
         });
       }
 
-      // Smooth dropdown
-    
+      // Initialize tooltip for bell icon
+      const bellIcon = document.querySelector('.fa-bell.bell-animated');
+      if (bellIcon) {
+        let unreadCount = parseInt('{{ $unreadCount }}', 10);
+        let tooltipText = 'No new notifications';
+        if (unreadCount === 1) {
+          tooltipText = '1 new notification';
+        } else if (unreadCount > 1) {
+          tooltipText = unreadCount + ' new notifications';
+        }
+        bellIcon.setAttribute('title', tooltipText);
+
+        // Use Bootstrap’s tooltip
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+      }
     });
   </script>
 
@@ -207,5 +284,8 @@
       opacity: 1;
       transform: translateY(0);
     }
+
+    /* Overlay for sidebar on small screens */
+   
   </style>
 </div>

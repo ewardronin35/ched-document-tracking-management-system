@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DocumentController as AdminDocumentController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\CavController;
+use App\Http\Controllers\CavOsdController;
 use App\Http\Controllers\Records\DashboardController as RecordsDashboardController;
 use App\Http\Controllers\Records\DocumentController as RecordsDocumentController;
 use App\Http\Controllers\SoMasterListController;
@@ -21,6 +22,9 @@ use App\Http\Controllers\IncomingController;
 use App\Http\Controllers\HEIController;
 use App\Http\Controllers\GmailController;
 use App\Http\Controllers\RecaptchaController;
+use App\Http\Controllers\DocumentAuthenticationController;
+use App\Http\Controllers\CertificationController;
+use App\Http\Controllers\CondobpobController;
 use App\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
@@ -104,7 +108,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/gmail/contacts', [GmailController::class, 'getContacts'])->name('gmail.getContacts');
     Route::get('/gmail/attachment/{emailId}/{attachmentId}/{filename}', [GmailController::class, 'downloadAttachment'])->name('gmail.downloadAttachment');
 
-    Route::post('/cavs/import-csv', [CavController::class, 'importCsv'])->name('cavs.import-csv');
+    Route::post('cavs/import-excel', [CavController::class, 'importExcel'])->name('cavs.import-excel');
     Route::get('gmail/sent', [GmailController::class, 'listSentEmails'])->name('gmail.sent');
     Route::get('gmail/drafts', [GmailController::class, 'listDraftEmails'])->name('gmail.drafts');
     Route::get('gmail/spam', [GmailController::class, 'listSpamEmails'])->name('gmail.spam');
@@ -171,8 +175,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::resource('documents', \App\Http\Controllers\DocumentController::class);
     
     Route::resource('incomings', IncomingController::class);
+    Route::get('cavs_osd/all', [CavOsdController::class, 'data'])->name('cavs_osd.all');
+    Route::get('certifications/all', [CertificationController::class, 'data'])->name('certifications.all');
+    Route::get('document_authentications/all', [DocumentAuthenticationController::class, 'data'])->name('document_authentications.all');
 
-
+    Route::patch('/manage/users/toggle-login/{id}', [AdminUserController::class, 'toggleLoginEligibility'])
+    ->name('manage.users.toggle-login');
 
 
     // Fetch Users Data for DataTables
@@ -197,6 +205,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
 
     // Generate Password
     Route::post('/manage-users/{user}/generate-password', [AdminUserController::class, 'generatePassword'])->name('manage.users.generatePassword');
+    Route::resource('cavs_osd', CavOsdController::class);
+    Route::resource('certifications', CertificationController::class);
+    Route::resource('document_authentications', DocumentAuthenticationController::class);
+    Route::get('condobpobs/all', [CondobpobController::class, 'data'])->name('condobpobs.all');
+    Route::resource('condobpobs', CondobpobController::class);
 });
 
 Route::prefix('records')->name('records.')->middleware(['auth', 'role:Records'])->group(function () {
@@ -301,3 +314,21 @@ Route::post('/test-broadcasting-auth', function (Request $request) {
 Route::get('/test-auth', function () {
     return view('test-auth');
 });
+Route::get('/notifications/{id}', function ($id) {
+    // Get the currently authenticated user.
+    $user = auth()->user();
+
+    // Attempt to find the notification belonging to the user.
+    $notification = $user->notifications()->find($id);
+
+    // If not found, abort with a 404 error.
+    if (!$notification) {
+        abort(404, 'Notification not found.');
+    }
+
+    // Optionally mark the notification as read.
+    $notification->markAsRead();
+
+    // Return a view that displays the notification details.
+    return view('notifications.show', compact('notification'));
+})->middleware('auth')->name('notifications.show');
