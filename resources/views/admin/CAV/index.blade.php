@@ -138,7 +138,7 @@
     <div class="tab-pane fade" id="import" role="tabpanel">
       <div class="mt-3">
         <div class="mb-3">
-          <input type="file" id="filepond-input" name="filepond" multiple />
+          <input type="file" id="filepond-input" name="file" multiple />
         </div>
         <div class="mb-3">
           <button class="btn btn-primary" id="import-btn">

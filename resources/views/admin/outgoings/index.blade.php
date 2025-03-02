@@ -277,6 +277,103 @@
   <!-- FilePond plugin for file type validation -->
   <script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.min.js"></script>
   <script>
+  // Define the function in the global scope
+  function autoFillSpareRow(hotInstance) {
+    const rowCount = hotInstance.countRows();
+    if (rowCount > 0) {
+      const lastRowIndex = rowCount - 1;
+      const rowData = hotInstance.getSourceDataAtRow(lastRowIndex) || {};
+      // Adjust the keys you check according to your data structure.
+      const isBlank = !rowData.id && !rowData.reference_number && !rowData.No;
+      if (isBlank) {
+        const currentMonth = new Date().getMonth() + 1;
+        const quarter = Math.floor((currentMonth - 1) / 3) + 1;
+        hotInstance.setDataAtRowProp(lastRowIndex, 'quarter', quarter, 'internal');
+        hotInstance.setDataAtRowProp(lastRowIndex, 'chedrix_2025', 'CHEDRIX-2025', 'internal');
+
+        // Auto-increment the "No" value.
+        const allNoValues = hotInstance.getDataAtProp('No')
+          .filter(val => !!val)
+          .map(val => parseInt(val, 10))
+          .filter(num => !isNaN(num));
+        const maxNo = allNoValues.length ? Math.max(...allNoValues) : 0;
+        const nextNo = String(maxNo + 1).padStart(4, '0');
+        hotInstance.setDataAtRowProp(lastRowIndex, 'No', nextNo, 'internal');
+      }
+    }
+  }
+  
+  // Optionally attach it to the window object for clarity:
+  window.autoFillSpareRow = autoFillSpareRow;
+  
+</script>
+<script> function isRowEmpty(rowData) {
+  if (!rowData) return true;
+  // Only check key fields that a user should fill manually
+  const fieldsToCheck = ['reference_number', 'date_received', 'sender_name', 'sender_email', 'subject', 'remarks'];
+  for (let field of fieldsToCheck) {
+    if (rowData[field] && rowData[field].toString().trim() !== '') {
+      return false;
+    }
+  }
+  return true;
+}
+
+  </script>
+<script>
+  // Declare the variable in the global scope
+var updatingRowColors = false;
+
+function updateRowColors(hotInstance) {
+  if (updatingRowColors) return;
+  updatingRowColors = true;
+
+  const totalRows = hotInstance.countRows();
+  const totalCols = hotInstance.countCols();
+
+  for (let row = 0; row < totalRows; row++) {
+    // Clear previous classes for each cell in this row.
+    for (let col = 0; col < totalCols; col++) {
+      let meta = hotInstance.getCellMeta(row, col);
+      if (meta.className) {
+        meta.className = meta.className.replace(/\b(gray-row|green-row|yellow-row|red-row)\b/g, '').trim();
+        hotInstance.setCellMeta(row, col, 'className', meta.className);
+      }
+    }
+
+    // Determine the new class based on the row data.
+    const rowData = hotInstance.getSourceDataAtRow(row);
+    let newClass = "";
+    if (isRowEmpty(rowData)) {
+      newClass = "gray-row";
+    } else if (rowData.date_received && !rowData.date_released) {
+      const receivedDate = new Date(rowData.date_received);
+      const currentDate = new Date();
+      const diffDays = Math.floor((currentDate - receivedDate) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 7) {
+        newClass = "red-row";
+      } else if (diffDays >= 3) {
+        newClass = "yellow-row";
+      } else if (diffDays >= 1) {
+        newClass = "green-row";
+      }
+    }
+
+    // Apply the new class to every cell in the row.
+    if (newClass) {
+      for (let col = 0; col < totalCols; col++) {
+        let meta = hotInstance.getCellMeta(row, col);
+        meta.className = meta.className ? meta.className + " " + newClass : newClass;
+        hotInstance.setCellMeta(row, col, "className", meta.className);
+      }
+    }
+  }
+  updatingRowColors = false;
+  // Note: Do not call hotInstance.render() here to avoid re-triggering afterRender.
+}
+
+  </script>
+  <script>
   // Register the FilePond plugin
   FilePond.registerPlugin(FilePondPluginFileValidateType);
 
@@ -299,17 +396,25 @@
         onload: (response) => {
           toastr.success('Incoming Import successful!');
           // Fetch updated incomings data
-          fetch('{{ route("admin.incomings.data") }}')
-            .then(res => res.json())
-            .then(data => {
-              const newData = data.data ? data.data : data;
-              if (window.hotIncomings) {
-                window.hotIncomings.loadData(newData);
-              }
-            })
-            .catch(err => console.error('Error fetching updated incomings:', err));
-          return response;
-        },
+          const incomingsDataUrl = "{{ route('admin.incomings.data') }}?_=" + new Date().getTime();
+          fetch(incomingsDataUrl + '?_=' + new Date().getTime())
+          .then(res => res.json())
+          .then(data => {
+            // In case your endpoint wraps the data (e.g., data.data), adjust accordingly:
+            const newData = data.data ? data.data : data;
+            if (window.hotIncomings) {
+              window.hotIncomings.loadData(newData);
+autoFillSpareRow(window.hotIncomings);
+updateRowColors(window.hotIncomings);
+setTimeout(() => {
+  window.dispatchEvent(new Event('resize'));
+  window.hotIncomings.render();
+}, 100);
+            }
+          })
+          .catch(err => console.error('Error fetching updated incomings:', err));
+        return response;
+      },
         onerror: (response) => {
           toastr.error('Error importing incoming file.');
         }
@@ -336,8 +441,9 @@
         onload: (response) => {
           toastr.success('Outgoing Import successful!');
           // Fetch updated outgoings data
-          fetch('{{ route("admin.outgoings.data") }}')
-            .then(res => res.json())
+          const outgoingsDataUrl = "{{ route('admin.outgoings.data') }}";
+          fetch(outgoingsDataUrl + '?_=' + new Date().getTime())
+          .then(res => res.json())
             .then(data => {
               const newData = data.data ? data.data : data;
               if (window.hotOutgoings) {
@@ -353,10 +459,7 @@
       }
     }
   });
-</script>
 
-
-<script>
 document.addEventListener("DOMContentLoaded", function() {
   function debugLog(msg) {
     console.log("[Handsontable Debug]", msg);
@@ -369,6 +472,7 @@ document.addEventListener("DOMContentLoaded", function() {
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
 }
+const debouncedUpdateRowColors = debounce(updateRowColors, 200);
 
   var outgoingsSubTabs = document.getElementById('outgoingsSubTabs');
   if (outgoingsSubTabs) {
@@ -437,6 +541,53 @@ document.addEventListener("DOMContentLoaded", function() {
   td.innerText = formattedValue;
 }
 
+function updateRowColors(hotInstance) {
+  if (updatingRowColors) return;
+  updatingRowColors = true;
+
+  const totalRows = hotInstance.countRows();
+  const totalCols = hotInstance.countCols();
+
+  for (let row = 0; row < totalRows; row++) {
+    // Clear previous classes for each cell in this row.
+    for (let col = 0; col < totalCols; col++) {
+      let meta = hotInstance.getCellMeta(row, col);
+      if (meta.className) {
+        meta.className = meta.className.replace(/\b(gray-row|green-row|yellow-row|red-row)\b/g, '').trim();
+        hotInstance.setCellMeta(row, col, 'className', meta.className);
+      }
+    }
+
+    // Determine the new class based on the row data.
+    const rowData = hotInstance.getSourceDataAtRow(row);
+    let newClass = "";
+    if (isRowEmpty(rowData)) {
+      newClass = "gray-row";
+    } else if (rowData.date_received && !rowData.date_released) {
+      const receivedDate = new Date(rowData.date_received);
+      const currentDate = new Date();
+      const diffDays = Math.floor((currentDate - receivedDate) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 7) {
+        newClass = "red-row";
+      } else if (diffDays >= 3) {
+        newClass = "yellow-row";
+      } else if (diffDays >= 1) {
+        newClass = "green-row";
+      }
+    }
+
+    // Apply the new class to every cell in the row.
+    if (newClass) {
+      for (let col = 0; col < totalCols; col++) {
+        let meta = hotInstance.getCellMeta(row, col);
+        meta.className = meta.className ? meta.className + " " + newClass : newClass;
+        hotInstance.setCellMeta(row, col, "className", meta.className);
+      }
+    }
+  }
+  updatingRowColors = false;
+  // DO NOT call hotInstance.render() here to avoid triggering another afterRender cycle.
+}
 // Renderer for incoming rows (for all columns except special ones)
 function incomingRowRenderer(instance, td, row, col, prop, value, cellProperties) {
   // Call the default text renderer first.
@@ -477,6 +628,15 @@ function incomingRowRenderer(instance, td, row, col, prop, value, cellProperties
   }
 }
 
+
+function dateRenderer(instance, td, row, col, prop, value, cellProperties) {
+  if (value) {
+    // Use moment to format the value to just the date portion
+    value = moment(value).format('YYYY-MM-DD');
+  }
+  Handsontable.renderers.TextRenderer.apply(this, arguments);
+  td.innerText = value;
+}
 // Custom time renderer to convert 24h time to 12h time with AM/PM.
 function timeRenderer(instance, td, row, col, prop, value, cellProperties) {
   let formattedValue = value;
@@ -539,6 +699,31 @@ function timeRenderer(instance, td, row, col, prop, value, cellProperties) {
     }
     hotInstance.render();
   }
+  function autoFillSpareRow(hotInstance) {
+  const rowCount = hotInstance.countRows();
+  if (rowCount > 0) {
+    const lastRowIndex = rowCount - 1;
+    const rowData = hotInstance.getSourceDataAtRow(lastRowIndex) || {};
+    // Adjust the keys you check according to your data structure.
+    const isBlank = !rowData.id && !rowData.reference_number && !rowData.No;
+    if (isBlank) {
+      const currentMonth = new Date().getMonth() + 1;
+      const quarter = Math.floor((currentMonth - 1) / 3) + 1;
+      hotInstance.setDataAtRowProp(lastRowIndex, 'quarter', quarter, 'internal');
+      hotInstance.setDataAtRowProp(lastRowIndex, 'chedrix_2025', 'CHEDRIX-2025', 'internal');
+
+      // Auto-increment the "No" value.
+      const allNoValues = hotInstance.getDataAtProp('No')
+        .filter(val => !!val)
+        .map(val => parseInt(val, 10))
+        .filter(num => !isNaN(num));
+      const maxNo = allNoValues.length ? Math.max(...allNoValues) : 0;
+      const nextNo = String(maxNo + 1).padStart(4, '0');
+      hotInstance.setDataAtRowProp(lastRowIndex, 'No', nextNo, 'internal');
+    }
+  }
+}
+ 
 
   function highlightRow(hotInstance, rowIndex) {
   // Clear existing highlights without triggering render each time.
@@ -618,53 +803,7 @@ function timeRenderer(instance, td, row, col, prop, value, cellProperties) {
 }
 
 let updatingRowColors = false;
-function updateRowColors(hotInstance) {
-  if (updatingRowColors) return;
-  updatingRowColors = true;
 
-  const totalRows = hotInstance.countRows();
-  const totalCols = hotInstance.countCols();
-
-  for (let row = 0; row < totalRows; row++) {
-    // Clear previous classes for each cell in this row.
-    for (let col = 0; col < totalCols; col++) {
-      let meta = hotInstance.getCellMeta(row, col);
-      if (meta.className) {
-        meta.className = meta.className.replace(/\b(gray-row|green-row|yellow-row|red-row)\b/g, '').trim();
-        hotInstance.setCellMeta(row, col, 'className', meta.className);
-      }
-    }
-
-    // Determine the new class based on the row data.
-    const rowData = hotInstance.getSourceDataAtRow(row);
-    let newClass = "";
-    if (isRowEmpty(rowData)) {
-      newClass = "gray-row";
-    } else if (rowData.date_received && !rowData.date_released) {
-      const receivedDate = new Date(rowData.date_received);
-      const currentDate = new Date();
-      const diffDays = Math.floor((currentDate - receivedDate) / (1000 * 60 * 60 * 24));
-      if (diffDays >= 7) {
-        newClass = "red-row";
-      } else if (diffDays >= 3) {
-        newClass = "yellow-row";
-      } else if (diffDays >= 1) {
-        newClass = "green-row";
-      }
-    }
-
-    // Apply the new class to every cell in the row.
-    if (newClass) {
-      for (let col = 0; col < totalCols; col++) {
-        let meta = hotInstance.getCellMeta(row, col);
-        meta.className = meta.className ? meta.className + " " + newClass : newClass;
-        hotInstance.setCellMeta(row, col, "className", meta.className);
-      }
-    }
-  }
-  updatingRowColors = false;
-  // DO NOT call hotInstance.render() here to avoid triggering another afterRender cycle.
-}
 
 
 function releaseIncoming(row, rowData) {
@@ -889,7 +1028,7 @@ const incomingsColumns = [
     type: 'date', 
     dateFormat: 'YYYY-MM-DD', 
     correctFormat: true, 
-    renderer: incomingRowRenderer 
+    renderer: dateRenderer, incomingRowRenderer
   },
   {
     data: null,
@@ -899,27 +1038,26 @@ const incomingsColumns = [
 ];
 
 
-    hotIncomings = new Handsontable(containerIncomings, {
-      data: incomingsArray,
-      colHeaders: incomingsColumns.map(col => col.title),
-      rowHeaders: true,
-      dropdownMenu: true,
-      filters: true,
-      columnSorting: true,
-      contextMenu: true,
-      licenseKey: 'non-commercial-and-evaluation',
-      search: true, // enable search plugin
-
-      height: 750,
-      minSpareRows: 1, // always keep 1 blank row at bottom
-
-      columns: incomingsColumns,
-      afterRender: function() {
+hotIncomings = new Handsontable(containerIncomings, {
+  data: incomingsArray,
+  colHeaders: incomingsColumns.map(col => col.title),
+  rowHeaders: true,
+  dropdownMenu: true,
+  filters: true,
+  columnSorting: true,
+  contextMenu: true,
+  licenseKey: 'non-commercial-and-evaluation',
+  search: true,
+  height: 750,
+  minSpareRows: 1,
+  columns: incomingsColumns,
+  afterRender: function() {
+    debouncedUpdateRowColors(this);
     updateRowColors(this);
     setTimeout(() => {
-    updateRowColors(this);
-    this.render(); // force a re-render after meta updates
-  }, 0);
+      updateRowColors(this);
+      this.render();
+    }, 0);
   },
       afterChange: function(changes, source) {
         console.log("Outgoings afterChange called. Source:", source, "Changes:", changes);
@@ -1142,7 +1280,7 @@ const method = hasValidId ? 'PUT' : 'POST';
 
   if (containerOutgoings) {
     const outgoingsArray = outgoingsData.map(item => ({
-      no:                item.no,
+      No: item.No, // use "No" to match what the controller returned
       chedrix_2025:      item.chedrix_2025,
       o:                 item.o,
       date_released:     item.date_released,
@@ -1180,11 +1318,22 @@ if (blankOutgoing) {
 }
     const outgoingsColumns = [
       { data: 'quarter_label',  title: 'Quarter Label', readOnly: true }, // e.g. "Q1 JAN-FEB-MAR"
-      { data: 'no',                title: 'No.' },
+      { data: 'No',                title: 'No.' },
       { data: 'chedrix_2025',      title: 'CHEDRIX 2025' },
       { data: 'o',                 title: 'O' },
       { data: 'date_released',     title: 'Date Released' },
-      { data: 'category',          title: 'Category' },
+      { data: 'category',          title: 'Category',
+        type: 'dropdown',
+        source: [
+    "RMO", "MEMO-ORD", "OM / CSO", "LETTER TO HEIS", "TRAVEL ORDER", "M&E", "T.A.",
+    "R9 RQAT", "R9 HEIS", "R9 STAFF", "COMPLAINTS / 888", "UNIFAST", "BARMM HEIS", 
+    "CHAIR", "ED", "OPSD", "OSDS", "OPRKM", "AFMS", "CAV-OSDS-isad", "CAV-KUWAIT", 
+    "CAV-DFA", "CAV-OTHERS", "OIQAG", "IAS", "RLA", "LGSO", "SCHOLARSHIP", 
+    "Personal/Private", "NSTP/CWTS", "EQUIVALENCY"
+  ]
+
+        
+       },
       { data: 'addressed_to',      title: 'Addressed To' },
       { data: 'email',             title: 'Email' },
       { data: 'subject_of_letter', title: 'Subject' },
@@ -1218,6 +1367,8 @@ if (blankOutgoing) {
 
       columns: outgoingsColumns,
       afterRender: function() {
+        debouncedUpdateRowColors(this);
+
   updateRowColors(this);
   setTimeout(() => {
     updateRowColors(this);
@@ -1336,7 +1487,12 @@ if (blankOutgoing) {
                 this.setDataAtRowProp(rowIndex, 'id', data.data.id, 'internal');
                 this.setDataAtRowProp(rowIndex, 'no', String(data.data.id).padStart(4, '0'), 'internal');
               }
-
+              if (data.data.date_released) {
+        this.setDataAtRowProp(rowIndex, 'date_released', data.data.date_released, 'internal');
+    }
+    if (data.data.quarter_label) {
+        this.setDataAtRowProp(rowIndex, 'quarter_label', data.data.quarter_label, 'internal');
+    }
               // Sync sub-tables if category changed
               const updatedCat = (data.data?.category || '').toLowerCase();
 
@@ -1508,7 +1664,7 @@ if (blankOutgoing) {
 
     const travelMemoColumns = [
       { data: 'quarter_label', title: 'QTR',  renderer: quarterLabelRenderer, readOnly: true },
-      { data: 'no',            title: 'No.',  readOnly: true },
+      { data: 'No',            title: 'No.',  readOnly: true },
       { data: 'o',             title: 'O' },
       { data: 'date_released', title: 'DATE OF RELEASED' },
       { data: 'addressed_to',  title: 'ADDRESSED TO' },
@@ -1585,7 +1741,7 @@ if (blankOutgoing) {
               toastr.success('Travel Memo record saved successfully.');
               if (!outgoingId && data?.data?.id) {
                 this.setDataAtRowProp(rowIndex, 'id', data.data.id, 'internal');
-                this.setDataAtRowProp(rowIndex, 'no', String(data.data.id).padStart(4, '0'), 'internal');
+                this.setDataAtRowProp(rowIndex, 'No', String(data.data.id).padStart(4, '0'), 'internal');
               }
               // sync in travelMemoData
               const idx = travelMemoData.findIndex(x => x.id == data.data.id);
@@ -1667,7 +1823,7 @@ if (blankOutgoing) {
     }));
 
     const onoColumns = [
-      { data: 'no',            title: 'No.', readOnly: true },
+      { data: 'No',            title: 'No.', readOnly: true },
       { data: 'o',             title: 'O' },
       { data: 'date_released', title: 'DATE OF RELEASED' },
       { data: 'addressed_to',  title: 'ADDRESSED TO' },

@@ -5,11 +5,12 @@ namespace App\Imports;
 use App\Models\DocumentAuthentication;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-
+use Illuminate\Support\Facades\Log;
 class DocumentAuthenticationImport implements ToModel, WithHeadingRow
 {
     public function model(array $row)
     {
+        Log::info('DocumentAuthenticationImport processing row:', ['row' => $row]);
         return new DocumentAuthentication([
             'quarter'          => $row['quarter'] ?? null,
             'No'               => $row['no'] ?? null,

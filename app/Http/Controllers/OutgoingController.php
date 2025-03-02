@@ -43,7 +43,7 @@ class OutgoingController extends Controller
                 'id'                => $item->id,
 
                 // Show the user a zero-padded "No."
-                'no' => $item->no ?: str_pad($item->id, 4, '0', STR_PAD_LEFT),
+                'No'                => $item->no_formatted,
 
                 'date_released'     => $item->date_released
                                           ? Carbon::parse($item->date_released)->format('Y-m-d')
@@ -105,12 +105,10 @@ class OutgoingController extends Controller
         $travelMemos = Outgoing::where('category', 'TRAVEL ORDER')->get()->map(function ($item) {
             return [
                 'id'            => $item->id,
-                'no'            => str_pad($item->id, 4, '0', STR_PAD_LEFT), // Display version
+                'No' => $item->no_formatted,
                 'quarter_label' => $item->quarter_label,
                 'o'             => $item->o,
-                'date_released' => $item->date_released
-                                    ? Carbon::parse($item->date_released)->format('Y-m-d')
-                                    : null,
+                'date_released' => $item->date_released,
                 'addressed_to'  => $item->addressed_to,
                 'email'         => $item->email,
                 'travel_date'   => $item->travel_date,
@@ -123,11 +121,9 @@ class OutgoingController extends Controller
         $onoOutgoings = Outgoing::where('category', 'ONO')->get()->map(function ($item) {
             return [
                 'id'            => $item->id,
-                'no'            => str_pad($item->id, 4, '0', STR_PAD_LEFT), 
+                'No' => $item->no_formatted, 
                 'o'             => $item->o,
-                'date_released' => $item->date_released
-                                    ? Carbon::parse($item->date_released)->format('Y-m-d')
-                                    : null,
+                'date_released' => $item->date_released,
                 'addressed_to'  => $item->addressed_to,
                 'subject'       => $item->subject_of_letter,
                 'remarks'       => $item->remarks,
@@ -196,16 +192,16 @@ class OutgoingController extends Controller
         }
         $validated = $request->validate([
             'date_released'     => 'nullable|date',   // now guaranteed to be set
-            'quarter'           => 'required|integer|min:1|max:4',
+            'quarter'           => 'nullable|integer|min:1|max:4',
             'category'          => 'nullable|string',
             'addressed_to'      => 'nullable|string',
-            'email'             => 'nullable|email',
+            'email'             => 'nullable|string',
             'subject_of_letter' => 'nullable|string',
             'remarks'           => 'nullable|string',
             'libcap_no'         => 'nullable|string',
             'status'            => 'nullable|string',
-            'chedrix_2025'      => 'required|string',
-            'o'                 => 'required|string',
+            'chedrix_2025'      => 'nullable|string',
+            'o'                 => 'nullable|string',
             'no'                => 'nullable|string',
             'incoming_id'       => 'nullable|exists:incoming,id',
             'travel_date'       => 'nullable|date',
@@ -293,14 +289,14 @@ class OutgoingController extends Controller
 
         // Validate
         $validated = $request->validate([
-            'date_released'     => 'required|date',
-            'category'          => 'required|string',
-            'addressed_to'      => 'required|string',
-            'email'             => 'required|email',
+            'date_released'     => 'nullable|date',
+            'category'          => 'nullable|string',
+            'addressed_to'      => 'nullable|string',
+            'email'             => 'nullable|string',
             'subject_of_letter' => 'nullable|string',
             'remarks'           => 'nullable|string',
             'libcap_no'         => 'nullable|string',
-            'status'            => 'required|string',
+            'status'            => 'nullable|string',
             'chedrix_2025'      => 'nullable|string',
             'o'                 => 'nullable|string',
             'incoming_id'       => 'nullable|exists:incoming,id',
@@ -332,7 +328,12 @@ class OutgoingController extends Controller
         return redirect()->route("{$prefix}.outgoings.index")
                          ->with('success', 'Outgoing updated successfully.');
     }
-
+    public function data()
+    {
+        $outgoings = Outgoing::with('incoming')->get();
+        return response()->json($outgoings);
+    }
+    
     /**
      * Remove the specified outgoing from storage.
      */

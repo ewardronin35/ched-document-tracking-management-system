@@ -16,6 +16,7 @@ class Outgoing extends Model
      * @var array
      */
     protected $table = 'outgoings';
+    protected $appends = ['quarter_label', 'no_formatted'];
 
     protected $fillable = [
         'No',
@@ -47,11 +48,34 @@ class Outgoing extends Model
         'date_time_routed'  => 'datetime',
         'date_acted_by_es'  => 'datetime',
         'date_released'     => 'date',
+        'travel_date'       => 'date',
+
     ];
     public function incoming()
     {
         return $this->belongsTo(Incoming::class);
     }
+    public function getDateReleasedAttribute($value)
+{
+    // If the value is "0000-00-00" or empty, return null; otherwise, format it.
+    if (!$value || $value === '0000-00-00') {
+        return null;
+    }
+    return Carbon::parse($value)->format('Y-m-d');
+}
+
+    public function getNoFormattedAttribute()
+    {
+        // Get the stored value from the DB (the column name is "No")
+        // If it exists and is not zero, cast it to an integer.
+        $number = (int) $this->getAttribute('No');
+        // If the value is zero (or null), use the model’s id
+        if ($number === 0) {
+            $number = $this->id;
+        }
+        return str_pad($number, 4, '0', STR_PAD_LEFT);
+    }
+    
     public function getQuarterLabelAttribute()
     {
         if (!$this->date_released) {

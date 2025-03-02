@@ -98,7 +98,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::post('gmail/send', [GmailController::class, 'sendEmail'])->name('sendEmail');
     Route::get('gmail/emails', [GmailController::class, 'listEmails'])->name('gmail.emails');
     Route::get('/outgoings/report', [OutgoingController::class, 'generateReport'])->name('outgoings.report');
-
+    Route::get('outgoings/data', [OutgoingController::class, 'data'])->name('outgoings.data');
+    Route::get('incomings/data', [IncomingController::class, 'data'])->name('incomings.data');
     Route::post('heis/import', [HEIController::class, 'import'])->name('heis.import');
     Route::get('heis/import', [HEIController::class, 'showImportForm'])->name('heis.import.form');
     Route::get('/emails', [GmailController::class, 'listEmails'])->name('gmail.emails');
@@ -142,8 +143,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('cav/get', [CavController::class, 'getCavs'])->name('cav.get');
     Route::get('/cav/import/form', [CavController::class, 'showImportForm'])->name('cav.import.form');
 
-    Route::get('outgoings/data', [OutgoingController::class, 'data'])->name('outgoings.data');
-    Route::get('incomings/data', [IncomingController::class, 'data'])->name('incomings.data');
+
     Route::post('incomings/import', [IncomingController::class, 'import'])->name('incomings.import');
     Route::get('/documents/details-modal/{id}', [DocumentController::class, 'details'])->name('documents.detailsModal');
 

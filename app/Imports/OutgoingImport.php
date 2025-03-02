@@ -88,7 +88,7 @@ class OutgoingImport implements ToModel, WithHeadingRow, WithMapping, WithChunkR
      */
     protected function parseDate($value)
     {
-        if (empty($value)) {
+        if (empty($value) || $value === 0) {
             return null;
         }
         if (is_numeric($value)) {
@@ -99,12 +99,55 @@ class OutgoingImport implements ToModel, WithHeadingRow, WithMapping, WithChunkR
                 return null;
             }
         }
-        return Carbon::parse($value);
+        try {
+            return Carbon::parse($value);
+        } catch (\Exception $e) {
+            Log::error("Error parsing date: " . $e->getMessage());
+            return null;
+        }
     }
+    
+
 
     /**
      * Convert an Excel time value (a fraction of a day) to a formatted time string.
      */
+    protected function parseCategory($value)
+    {
+        $allowed = [
+            "RMO", "MEMO-ORD", "OM / CSO", "LETTER TO HEIS", "TRAVEL ORDER", "M&E", "T.A.",
+            "R9 RQAT", "R9 HEIS", "R9 STAFF", "COMPLAINTS / 888", "UNIFAST", "BARMM HEIS", 
+            "CHAIR", "ED", "OPSD", "OSDS", "OPRKM", "AFMS", "CAV-OSDS-isad", "CAV-KUWAIT", 
+            "CAV-DFA", "CAV-OTHERS", "OIQAG", "IAS", "RLA", "LGSO", "SCHOLARSHIP", 
+            "Personal/Private", "NSTP/CWTS", "EQUIVALENCY"
+        ];
+        
+        $value = trim($value);
+        Log::info("parseCategory input value: " . $value);
+        
+        if (in_array($value, $allowed)) {
+            return $value;
+        }
+        // Otherwise, try splitting by '/' or ',' and return the first allowed value.
+        if (strpos($value, '/') !== false) {
+            $parts = explode('/', $value);
+            $first = trim($parts[0]);
+            if (in_array($first, $allowed)) {
+                return $first;
+            }
+        }
+        if (strpos($value, ',') !== false) {
+            $parts = explode(',', $value);
+            $first = trim($parts[0]);
+            if (in_array($first, $allowed)) {
+                return $first;
+            }
+        }
+        return 'Personal/Private';
+    }
+    
+    
+    
     protected function parseTime($value)
     {
         if (empty($value)) {
@@ -135,7 +178,7 @@ class OutgoingImport implements ToModel, WithHeadingRow, WithMapping, WithChunkR
     {
         // Normalize the row first.
         $row = $this->normalizeRow($row);
-        Log::info("Mapping row for sheet index {$this->sheetIndex}: " . json_encode($row));
+        Log::info("Normalized row keys: " . implode(", ", array_keys($row)));
 
         // Parse the common "date_released" field.
         $dateReleased = $this->parseDate($this->getValue($row, ['date_of_released', 'date_released']));
@@ -145,11 +188,11 @@ class OutgoingImport implements ToModel, WithHeadingRow, WithMapping, WithChunkR
         if ($this->sheetIndex == 0) {
             // Sheet 0: 2025 OUTGOING
             return [
-                'no'                => $this->getValue($row, ['no']),
+                'No'                => $this->getValue($row, ['no']),
                 'date_released'     => $dateReleased,
                 'quarter'           => $quarter,
-                // Use the "personal/private" column value as the category.
-                'category'          => $this->getValue($row, ['personal/private'], 'OUTGOING'),
+                // Use the normalized key 'personal_private' and pass it to your parser.
+                'category' => $this->parseCategory($this->getValue($row, ['category', 'personalprivate'])),
                 'addressed_to'      => $this->getValue($row, ['addresed_to', 'addressed_to']),
                 'email'             => $this->getValue($row, ['email']),
                 'subject_of_letter' => substr($this->getValue($row, ['subject']), 0, 255),
@@ -207,6 +250,10 @@ class OutgoingImport implements ToModel, WithHeadingRow, WithMapping, WithChunkR
         }
         return new Outgoing($mappedRow);
     }
+/**
+ * Convert and parse the category field, handling detailed information.
+ */
+
 
     /**
      * Set the chunk size.

@@ -5,12 +5,16 @@ namespace App\Imports;
 use App\Models\Certification;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Illuminate\Support\Facades\Log;
 
 class CertificationImport implements ToModel, WithHeadingRow
 {
     public function model(array $row)
+
     {
+        Log::info('CertificationImport processing row:', ['row' => $row]);
         return new Certification([
+            
             'quarter'            => $row['quarter'] ?? null,
             'o_prefix'           => $row['o_prefix'] ?? null,
             'cav_no'             => $row['cav_no'] ?? null,

@@ -1,6 +1,6 @@
 @php
-    $roleCollection = auth()->user()->getRoleNames();
-    $role = $roleCollection->isNotEmpty() ? strtolower($roleCollection->first()) : null;
+  $roleCollection = auth()->user()->getRoleNames();
+  $role = $roleCollection->isNotEmpty() ? strtolower($roleCollection->first()) : null;
 @endphp
 
 <!-- Include Bootstrap & Font Awesome & Google Fonts -->
@@ -22,21 +22,21 @@
 
 <style>
   :root {
-    --primary-color: #133A86;      /* Blue */
-    --secondary-color: #DA042A;    /* Red */
-    --accent-color:   #FEE71B;     /* Yellow */
-    --white-color:    #ffffff;
-    --black-color:    #000000;
+  --primary-color: #133A86;      /* Blue */
+  --secondary-color: #DA042A;    /* Red */
+  --accent-color:   #FEE71B;     /* Yellow */
+  --white-color:    #ffffff;
+  --black-color:    #000000;
 
-    /* Additional custom values */
-    --font-family: 'Poppins', sans-serif;  
-    --sidebar-hover-bg: #0F2D6B;  /* Slightly darker than primary */
-    --sidebar-active-bg: #DA042A; /* Red highlight for active link */
-    --sidebar-border: #0B2A5D;    /* Subtle border color for separation */
+  /* Additional custom values */
+  --font-family: 'Poppins', sans-serif;  
+  --sidebar-hover-bg: #0F2D6B;  /* Slightly darker than primary */
+  --sidebar-active-bg: #DA042A; /* Red highlight for active link */
+  --sidebar-border: #0B2A5D;    /* Subtle border color for separation */
   }
 
   body, .sidebar, .nav-link, button, .dropdown-item {
-    font-family: var(--font-family);
+  font-family: var(--font-family);
   }
 
   /* The main sidebar container */
@@ -216,66 +216,67 @@
         </a>
       </li>
 @endif
-      <!-- Outgoing -->
+  <!-- Outgoing -->
      
+  <!-- Admin-Only Links -->
+  @role('admin')
+  
+  <li class="nav-item mb-1">
+    <a 
+      href="{{ route('admin.manage.users.index') }}" 
+      class="nav-link {{ request()->routeIs('admin.manage.users.*') ? 'active' : '' }}"
+      data-bs-toggle="tooltip" 
+      data-bs-placement="right" 
+      title="Manage Users"
+    >
+      <i class="fa fa-users"></i> Manage Users
+    </a>
+  </li>
+  @endrole
 
-      <!-- Admin-Only Links -->
-      @role('admin')
-      
-      <li class="nav-item mb-1">
-        <a 
-          href="{{ route('admin.manage.users.index') }}" 
-          class="nav-link {{ request()->routeIs('admin.manage.users.*') ? 'active' : '' }}"
-          data-bs-toggle="tooltip" 
-          data-bs-placement="right" 
-          title="Manage Users"
-        >
-          <i class="fa fa-users"></i> Manage Users
-        </a>
-      </li>
-      @endrole
-
-      <!-- Communication Tracking -->
+  <!-- Communication Tracking -->
      
+  <!-- Email History -->
+  <li class="nav-item mb-1">
+    <a 
+      href="{{ route('admin.gmail.emails') }}" 
+      class="nav-link {{ request()->routeIs('admin.gmail.*') ? 'active' : '' }}"
+      data-bs-toggle="tooltip" 
+      data-bs-placement="right" 
+      title="CHED-eMail"
+    >
+      <i class="fa fa-envelope"></i> CHED-eMail
+    </a>
+  </li>
 
-      <!-- Email History -->
-      <li class="nav-item mb-1">
-        <a 
-          href="{{ route('admin.gmail.emails') }}" 
-          class="nav-link {{ request()->routeIs('admin.gmail.*') ? 'active' : '' }}"
-          data-bs-toggle="tooltip" 
-          data-bs-placement="right" 
-          title="CHED-eMail"
-        >
-          <i class="fa fa-envelope"></i> CHED-eMail
-        </a>
-      </li>
-
-      <!-- Profile -->
-      <li class="nav-item mb-1">
-        <a 
-          href="{{ route('profile.show') }}" 
-          class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
-          data-bs-toggle="tooltip" 
-          data-bs-placement="right" 
-          title="Profile"
-        >
-          <i class="fa fa-user"></i> Profile
-        </a>
-      </li>
+  <!-- Profile -->
+  <li class="nav-item mb-1">
+    <a 
+      href="{{ route('profile.show') }}" 
+      class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}"
+      data-bs-toggle="tooltip" 
+      data-bs-placement="right" 
+      title="Profile"
+    >
+      <i class="fa fa-user"></i> Profile
+    </a>
+  </li>
     </ul>
   </nav>
 
-  <!-- Logout Section -->
+  <!-- Redesigned Logout Section -->
   <div class="p-3 border-top">
     <form method="POST" action="{{ route('logout') }}">
-      @csrf
-      <button 
-        type="submit" 
-        class="btn sidebar-logout-btn w-100 d-flex align-items-center justify-content-center"
-      >
-        <i class="fa fa-sign-out-alt me-2"></i> Logout
-      </button>
+  @csrf
+  <button 
+    type="submit" 
+    class="btn w-100 d-flex align-items-center justify-content-center"
+    style="background: linear-gradient(45deg, #DA042A, #C30E23); color: #fff; border: none; transition: transform 0.2s ease;"
+    onmouseover="this.style.transform='scale(1.05)'"
+    onmouseout="this.style.transform='scale(1)'"
+  >
+    <i class="fa fa-sign-out-alt me-2"></i> Sign Out
+  </button>
     </form>
   </div>
 </div>

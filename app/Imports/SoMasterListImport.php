@@ -45,15 +45,29 @@ class SoMasterListImport implements ToModel, WithHeadingRow, WithEvents, ShouldQ
     /**
      * Register events to capture the sheet name.
      */
+    protected $skipSheet = false;
+
     public function registerEvents(): array
     {
         return [
-            // BeforeSheet event lets us capture the sheet’s title.
             BeforeSheet::class => function(BeforeSheet $event) {
-                // Store the sheet name in a property.
-                $this->sheetName = $event->getSheet()->getDelegate()->getTitle();
+                $sheetDelegate = $event->getSheet()->getDelegate();
+                $this->sheetName = $sheetDelegate->getTitle();
+
+                // Determine the highest row (number of rows with data)
+                $highestRow = $sheetDelegate->getHighestRow();
+                // Assuming your headingRow() returns 1 or 2 as the header row.
+                // If there’s no data beyond the header, skip this sheet.
+                if ($highestRow <= $this->headingRow()) {
+                    $this->skipSheet = true;
+                    Log::info("Skipping sheet '{$this->sheetName}' because it appears empty.");
+                }
             },
         ];
+    }
+    public function headingRow(): int
+    {
+        return 1; // adjust if your headers are on a different row
     }
 
     /**
@@ -64,6 +78,15 @@ class SoMasterListImport implements ToModel, WithHeadingRow, WithEvents, ShouldQ
      */
     public function model(array $row)
     {
+        if ($this->skipSheet) {
+            return null;
+        }
+
+        // Skip rows that are completely empty.
+        if (!array_filter($row)) {
+            return null;
+        }
+
         // Trim all row values to remove any leading/trailing spaces.
         $row = array_map(fn($value) => is_string($value) ? trim($value) : $value, $row);
     
@@ -208,6 +231,10 @@ class SoMasterListImport implements ToModel, WithHeadingRow, WithEvents, ShouldQ
     }
     public function chunkSize(): int
     {
-        return 500;
+        return 1000;
+    }
+    public function batchSize(): int
+    {
+        return 1000;
     }
 }

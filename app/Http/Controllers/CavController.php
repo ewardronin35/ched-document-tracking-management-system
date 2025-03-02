@@ -12,7 +12,7 @@ use App\Models\Hei;      // Assuming there's an Hei model for HEI records
 use App\Models\Programs;  // Assuming there's a Program model for Program records
 use App\Imports\MultiSheetCavImport;
 use Maatwebsite\Excel\Facades\Excel;
-
+use Illuminate\Support\Facades\Log;
 class CavController extends Controller
 {
     /**
@@ -275,9 +275,19 @@ class CavController extends Controller
    
     public function importExcel(Request $request)
     {
+        Log::info('Importing CAV records...');
+        
         $request->validate([
             'file' => 'required|file|mimes:xlsx,xls'
         ]);
+        Log::info('Validation passed.');
+
+        if (!$request->hasFile('file')) {
+            Log::error('No file found in request.');
+            return response()->json(['error' => 'No file uploaded.'], 400);
+        }
+        Log::info('Uploaded file info:', ['filename' => $request->file('file')->getClientOriginalName()]);
+
     
         try {
             Excel::import(new MultiSheetCavImport, $request->file('file'));

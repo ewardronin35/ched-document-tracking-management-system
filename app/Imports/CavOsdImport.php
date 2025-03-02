@@ -5,11 +5,12 @@ namespace App\Imports;
 use App\Models\CavsOsd;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-
+use Illuminate\Support\Facades\Log;
 class CavOsdImport implements ToModel, WithHeadingRow
 {
     public function model(array $row)
     {
+        Log::info('CavOsdImport processing row:', ['row' => $row]);
         return new CavsOsd([
             'quarter'           => $row['quarter'] ?? null,
             'o'                 => $row['o'] ?? null,

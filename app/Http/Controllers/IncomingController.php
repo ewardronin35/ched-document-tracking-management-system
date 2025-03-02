@@ -21,19 +21,11 @@ class IncomingController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function data()
-    {
-        $incoming = Incoming::select('incoming.*');
-    
-        return DataTables::of($incoming)
-            ->addColumn('actions', function ($incoming) {
-                return view('partials.actions', [
-                    'model' => $incoming,
-                    'route' => 'incoming',
-                ])->render();
-            })
-            ->rawColumns(['actions']) // Ensure actions column is treated as raw HTML
-            ->make(true);
-    }
+{
+    $incomings = Incoming::orderBy('date_received', 'desc')->get();
+    return response()->json($incomings);
+}
+
     protected function getCurrentPrefix()
     {
         $routeName = Route::currentRouteName(); // e.g., 'admin.documents.outgoings.index'

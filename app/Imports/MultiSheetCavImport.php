@@ -3,7 +3,7 @@
 namespace App\Imports;
 
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
-
+use Illuminate\Support\Facades\Log;
 class MultiSheetCavImport implements WithMultipleSheets
 {
     /**
@@ -13,6 +13,9 @@ class MultiSheetCavImport implements WithMultipleSheets
      */
     public function sheets(): array
     {
+
+        Log::info("Processing MultiSheetCavImport sheets"); // This should now work.
+        
         return [
             0 => new LocalCavSheetImport(),              // Sheet 1: Local CAV records
             1 => new AbroadCavSheetImport(),             // Sheet 2: Abroad CAV records

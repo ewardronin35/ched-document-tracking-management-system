@@ -100,8 +100,13 @@
         <i class="fa fa-book"></i> View Majors
     </a>
 </li>
+ 
+<li class="nav-item" role="presentation">
 
-
+        <a href="#" class="nav-link" id="reports-tab">
+            <i class="fa fa-file"></i> Reports
+        </a>
+    </li>
 </ul>
 
 
@@ -132,7 +137,7 @@
                 </div>
                 <div class="modal-body">
                     <!-- FilePond replaces this file input -->
-                    <input type="file" name="csv_file" id="soCsvFile" class="filepond" 
+                    <input type="file" name="file" id="soCsvFile" class="filepond" 
                            accept=".csv, .xlsx, .xls" required>
                 </div>
                 <div class="modal-footer">

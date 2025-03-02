@@ -5,11 +5,12 @@ namespace App\Imports;
 use App\Models\Condobpob;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-
+use Illuminate\Support\Facades\Log;
 class CondobpobImport implements ToModel, WithHeadingRow
 {
     public function model(array $row)
     {
+        Log::info('CondobpobImport processing row:', ['row' => $row]);
         return new Condobpob([
             'quarter'           => $row['quarter'] ?? null,
             'No'                => $row['no'] ?? null,  // make sure the heading is lowercased if needed

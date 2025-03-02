@@ -308,7 +308,8 @@ class SoMasterListController extends Controller
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt,xlsx,xls|max:60000',
         ]);
-    
+        
+        set_time_limit(1000);
         // Dispatch the import job (Runs in the background)
         Excel::import(new SoMasterListImport, $request->file('csv_file'));
     

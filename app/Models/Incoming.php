@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use Carbon\Carbon;
 class Incoming extends Model
 {
     use HasFactory;
@@ -58,6 +58,7 @@ class Incoming extends Model
      *
      * @var array<string, string>
      */
+    protected $appends = ['no_formatted'];
     protected $casts = [
         'date_received' => 'date',
         'time_emailed' => 'string',
@@ -65,6 +66,23 @@ class Incoming extends Model
         'date_acted_by_es' => 'date',
         'year' => 'integer',
     ];
+    public function getNoFormattedAttribute()
+    {
+        // Cast the stored "No" to an integer.
+        $number = (int) $this->getAttribute('No');
+        if ($number === 0) {
+            // Fallback: use the record's id.
+            $number = $this->id;
+        }
+        return str_pad($number, 4, '0', STR_PAD_LEFT);
+    }
+    public function getDateReceivedAttribute($value)
+{
+    if (!$value || $value === '0000-00-00') {
+        return null;
+    }
+    return \Carbon\Carbon::parse($value)->format('Y-m-d');
+}
 
     public function outgoing()
     {

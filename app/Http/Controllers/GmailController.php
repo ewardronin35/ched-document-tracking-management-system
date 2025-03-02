@@ -809,53 +809,55 @@ public function getContacts(Request $request)
     }
 
     return response()->json($contacts);
-}
-private function getGmailClient()
-    {
-        $client = new Google_Client();
-        $client->setAuthConfig($this->credentialsPath);
-        $client->setScopes([
-            Google_Service_Gmail::GMAIL_READONLY,
-            Google_Service_Gmail::GMAIL_SEND
-        ]);
-        $client->setAccessType('offline');
-        $client->setPrompt('select_account consent');
+}private function getGmailClient()
+{
+    $client = new Google_Client();
+    $client->setAuthConfig($this->credentialsPath);
+    $client->setScopes([
+        Google_Service_Gmail::GMAIL_READONLY,
+        Google_Service_Gmail::GMAIL_SEND,
+    ]);
+    $client->setAccessType('offline');
+    $client->setPrompt('select_account consent');
 
-        $user = Auth::user();
-        if (!$user) {
-            Log::error('No authenticated user found.');
-            abort(401, 'Please log in to continue.');
-        }
-
-        $gmailToken = GmailToken::where('user_id', $user->id)->first();
-        if (!$gmailToken) {
-            $authUrl = $client->createAuthUrl();
-            abort(401, 'Please authenticate with Google. ' . $authUrl);
-        }
-        $client->setAccessToken($gmailToken->access_token);
-
-        // Check that the token includes the required scopes.
-        if (!$this->tokenHasRequiredScopes($client->getAccessToken(), [
-            Google_Service_Gmail::GMAIL_READONLY,
-            Google_Service_Gmail::GMAIL_SEND
-        ])) {
-            $gmailToken->delete();
-            $authUrl = $client->createAuthUrl();
-            abort(401, 'Please authenticate with Google. ' . $authUrl);
-        }
-
-        // Refresh token if expired
-        if ($client->isAccessTokenExpired()) {
-            if ($client->getRefreshToken()) {
-                $newAccessToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-                $gmailToken->access_token = $newAccessToken;
-                $gmailToken->save();
-            } else {
-                $gmailToken->delete();
-                $authUrl = $client->createAuthUrl();
-                abort(401, 'Please re-authenticate with Google. ' . $authUrl);
-            }
-        }
-        return $client;
+    $user = Auth::user();
+    if (!$user) {
+        Log::error('No authenticated user found.');
+        abort(401, 'Please log in to continue.');
     }
+
+    // Retrieve the token from the database
+    $gmailToken = GmailToken::where('user_id', $user->id)->first();
+    if (!$gmailToken) {
+        $authUrl = $client->createAuthUrl();
+        abort(401, 'Please authenticate with Google. ' . $authUrl);
+    }
+
+    // Set the stored access token
+    $accessToken = $gmailToken->access_token;
+    $client->setAccessToken($accessToken);
+
+    // Make sure the refresh token is set on the client (if it exists in the stored token)
+    if (isset($accessToken['refresh_token'])) {
+        $client->setRefreshToken($accessToken['refresh_token']);
+    }
+
+    // Force a refresh of the access token on every call.
+    if ($client->getRefreshToken()) {
+        $newAccessToken = $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+        // Update the token in the database
+        $gmailToken->access_token = $newAccessToken;
+        $gmailToken->save();
+        // Set the new token on the client
+        $client->setAccessToken($newAccessToken);
+    } else {
+        // If no refresh token is available, delete the token and force re-authentication.
+        $gmailToken->delete();
+        $authUrl = $client->createAuthUrl();
+        abort(401, 'Please re-authenticate with Google. ' . $authUrl);
+    }
+
+    return $client;
+}
+
 }
