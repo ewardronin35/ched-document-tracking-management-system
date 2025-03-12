@@ -25,7 +25,7 @@ class CavOsdController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'quarter'            => 'nullable|integer',
+            'quarter'            => 'nullable|string',
             'o'                  => 'nullable|string',         // e.g., O-
             'seq'                => 'nullable|string',
             'cav_osds'           => 'nullable|string',
@@ -43,10 +43,12 @@ class CavOsdController extends Controller
             'major'              => 'nullable|string',
             'program_level'      => 'nullable|string',
             'status_of_the_program' => 'nullable|string',
-            'date_started'       => 'nullable|date',
-            'date_ended'         => 'nullable|date',
+            'semester1'          => 'nullable|string',
+            'date_started'       => 'nullable|string',
+            'semester2'          => 'nullable|string',
+            'date_ended'         => 'nullable|string',
             'graduation_date'    => 'nullable|date',
-            'units_earned'       => 'nullable|integer',
+            'units_earned'       => 'nullable|string',
             'special_order_no'   => 'nullable|string',
             'date_applied'       => 'nullable|date',
             'date_released'      => 'nullable|date',
@@ -75,8 +77,8 @@ class CavOsdController extends Controller
         $cav = CavsOsd::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'quarter'            => 'nullable|integer',
-            'o'                  => 'nullable|string',
+            'quarter'            => 'nullable|string',
+            'o'                  => 'nullable|string',         // e.g., O-
             'seq'                => 'nullable|string',
             'cav_osds'           => 'nullable|string',
             'surname'            => 'nullable|string',
@@ -93,10 +95,12 @@ class CavOsdController extends Controller
             'major'              => 'nullable|string',
             'program_level'      => 'nullable|string',
             'status_of_the_program' => 'nullable|string',
-            'date_started'       => 'nullable|date',
-            'date_ended'         => 'nullable|date',
+            'semester1'          => 'nullable|string',
+            'date_started'       => 'nullable|string',
+            'semester2'          => 'nullable|string',
+            'date_ended'         => 'nullable|string',
             'graduation_date'    => 'nullable|date',
-            'units_earned'       => 'nullable|integer',
+            'units_earned'       => 'nullable|string',
             'special_order_no'   => 'nullable|string',
             'date_applied'       => 'nullable|date',
             'date_released'      => 'nullable|date',

@@ -4,6 +4,8 @@ namespace App\Imports;
 
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+
 class MultiSheetCavImport implements WithMultipleSheets
 {
     /**
@@ -13,17 +15,16 @@ class MultiSheetCavImport implements WithMultipleSheets
      */
     public function sheets(): array
     {
-
-        Log::info("Processing MultiSheetCavImport sheets"); // This should now work.
-        
         return [
-            0 => new LocalCavSheetImport(),              // Sheet 1: Local CAV records
-            1 => new AbroadCavSheetImport(),             // Sheet 2: Abroad CAV records
-            2 => new CondobpobImport(),                  // Sheet 3: CondoBPOB
-            3 => new CavOsdImport(),                     // Sheet 4: CAV‑OSDS
-            4 => new DocumentAuthenticationImport(),     // Sheet 5: Authentication of Documents
-            5 => new CertificationImport(),              // Sheet 6: Certification
-            // Add additional sheets here if needed...
+            '2025 CAV'                 => new AllCavSheetImport(),
+            'CAV LOCAL'                => new LocalCavSheetImport(),
+            'CAV ABROAD'               => new AbroadCavSheetImport(),
+            'CONDOBPOB'                => new CondobpobImport(),
+            'CAV-OSDS'                 => new CavOsdImport(),
+            'AUTHENTICATION OF DOCUMENTS' => new DocumentAuthenticationImport(),
+            'CERTIFICATION'            => new CertificationImport(),
+            // Additional sheets can be added here...
         ];
-    }
+    } 
+    
 }

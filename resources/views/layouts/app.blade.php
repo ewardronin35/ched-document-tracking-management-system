@@ -1,17 +1,15 @@
-<!-- resources/views/layouts/app.blade.php -->
-
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <!-- Meta Tags and CSRF Token -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'CHED-eTrack') }}</title>
     <link rel="icon" href="{{ asset('Logo.png') }}" type="image/png">
 
-    <!-- Preloaded Fonts -->
+    <!-- Responsive Fonts -->
     <link rel="preload"
           href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap"
           as="style"
@@ -19,8 +17,10 @@
     <noscript>
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet">
     </noscript>
-
-    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <!-- Bootstrap CSS with Responsive Utilities -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Blade Stack for Additional Styles -->
@@ -31,67 +31,107 @@
 
     @livewireStyles
 
-    <!-- Custom Styles for the Loading Overlay -->
+    <!-- Custom Responsive Styles -->
     <style>
-        /* 
-         * Loading Overlay (Image-Based)
-         * Displayed by default, then hidden after a short delay or on AJAX completion.
-        */
+        /* Responsive Loading Overlay */
         .spinner-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            /* Semi-transparent white background */
             background-color: rgba(255, 255, 255, 0.8);
-
-            /* Center content (the loading image) both vertically and horizontally */
             display: flex;
             align-items: center;
             justify-content: center;
-
-            /* Ensure it's above everything else */
             z-index: 9999;
-
-            /* 
-             * For smooth fading transitions:
-             * 1. Start fully opaque
-             * 2. We'll toggle opacity to 0 (hidden) or 1 (visible)
-             */
             opacity: 1;
             pointer-events: auto;
             transition: opacity 0.6s ease-in-out;
         }
 
-        /* Hidden state for fluid fade-out */
         .spinner-overlay.hidden {
-            opacity: 0;               /* Gradually fade out via transition */
-            pointer-events: none;     /* Prevent clicks or interactions when hidden */
+            opacity: 0;
+            pointer-events: none;
         }
 
-        /* Style the loading image if you'd like a fixed size */
         .loading-image {
             width: 100px;
-            height: auto; /* Keep aspect ratio, or set a fixed height if needed */
+            max-width: 50vw; /* Responsive sizing */
+            height: auto;
+            animation: spin 3s linear infinite;
         }
 
-      
         @keyframes spin {
             0%   { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .loading-image {
-            animation: spin 3s linear infinite; 
+
+        /* Responsive Sidebar and Main Content */
+        @media (max-width: 992px) {
+            .main-content {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -250px; /* Hidden by default */
+                width: 250px;
+                height: 100%;
+                transition: left 0.3s ease;
+                z-index: 1050;
+            }
+
+            .sidebar.show {
+                left: 0;
+            }
+
+            /* Overlay for mobile sidebar */
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 1040;
+                display: none;
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
         }
-        */
+
+        /* Ensure full responsiveness for tables and content */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        /* Responsive typography */
+        body {
+            font-size: 16px;
+        }
+
+        @media (max-width: 576px) {
+            body {
+                font-size: 14px;
+            }
+
+            .container-fluid {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+        }
     </style>
 </head>
 
 <body class="font-sans antialiased">
-@include('layouts.partials.toastr')
+    @include('layouts.partials.toastr')
 
-    <!-- Loading Overlay with an Image -->
+    <!-- Loading Overlay with Responsive Image -->
     <div id="loading-overlay" class="spinner-overlay">
         <img
             src="{{ asset('images/logo.png') }}"
@@ -100,39 +140,51 @@
             aria-label="Loading Overlay"
             aria-busy="true"
         />
-       
     </div>
 
+    <!-- Responsive Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-    <!-- Alpine.js Shared State Wrapper -->
-    <div x-data="{ isSidebarOpen: false, isResponsiveMenuOpen: false }" class="d-flex">
-        <!-- 1) The Overlay (mobile only) -->
-        <div 
-            x-show="isSidebarOpen" 
-            @click="isSidebarOpen = false" 
-            class="fixed inset-0 bg-black opacity-50 z-40" 
-            x-transition
-        ></div>
+    <!-- Alpine.js Responsive State Wrapper -->
+    <div 
+        x-data="{ 
+            isSidebarOpen: false, 
+            isResponsiveMenuOpen: false,
+            toggleSidebar() {
+                this.isSidebarOpen = !this.isSidebarOpen;
+                document.getElementById('sidebar-overlay').classList.toggle('show', this.isSidebarOpen);
+            }
+        }" 
+        class="d-flex"
+    >
+        <!-- Sidebar Toggle for Mobile -->
+        <button 
+            @click="toggleSidebar" 
+            class="d-lg-none position-fixed top-0 start-0 m-3 btn btn-outline-primary z-1050"
+            aria-label="Toggle Sidebar"
+        >
+            <i class="fas fa-bars"></i>
+        </button>
 
         <!-- Sidebar -->
         @auth
             @include('layouts.sidebar')
         @endauth
 
-        <!-- Main Content -->
+        <!-- Main Content Area -->
         <div class="flex-grow-1 main-content">
             <!-- Navigation Menu -->
             @livewire('navigation-menu')
 
             @if (isset($header))
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <header class="bg-white shadow-sm">
+                    <div class="container-fluid py-3 px-md-4">
                         {{ $header }}
                     </div>
                 </header>
             @endif
 
-            <main class="p-4">
+            <main class="p-1">
                 @yield('content')
             </main>
         </div>
@@ -141,14 +193,15 @@
     @stack('modals')
 
     <!-- jQuery (Required for Bootstrap JS and DataTables) -->
-
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://apis.google.com/js/platform.js" async defer></script>
-    <!-- Bootstrap JS Bundle (Includes Popper) -->
+
+    <!-- User ID Script -->
     <script>
-    const userId = {{ auth()->user()->id ?? 'null' }};
-    console.log("Listening for notifications for user: " + userId);
-</script>
+        const userId = {{ auth()->user()->id ?? 'null' }};
+        console.log("Listening for notifications for user: " + userId);
+    </script>
+
     <!-- Blade Stack for Additional Scripts -->
     @stack('scripts')
 
@@ -162,42 +215,30 @@
         });
     </script>
 
-
-    <!-- Universal Loading Overlay Control with Fade and Delay -->
+    <!-- Universal Loading Overlay Control with Improved Responsiveness -->
     <script>
-        /**
-         * We keep the overlay visible by default.
-         * 1. Hide overlay ~1 second after window finishes loading (images, scripts, etc.).
-         * 2. For jQuery AJAX or Livewire events, show and then fade out again.
-         */
-
         window.addEventListener('load', function() {
-            // Use a small delay (e.g., 1000 ms) to show the logo briefly, then fade out.
             setTimeout(function() {
                 const overlay = document.getElementById('loading-overlay');
                 if (overlay) {
-                    overlay.classList.add('hidden'); // triggers CSS transition
-                    // After the transition finishes (~0.6s), we can fully hide or remove the overlay if we want
+                    overlay.classList.add('hidden');
                     setTimeout(() => overlay.style.display = 'none', 500);
                 }
             }, 500);
         });
 
-        // jQuery-based: Show overlay on AJAX start, hide on AJAX stop
+        // jQuery-based AJAX handling
         $(document).ajaxStart(function() {
-            // Reinstate overlay if previously hidden
             $('#loading-overlay').removeClass('hidden').show();
         }).ajaxStop(function() {
-            // Fade out again
             $('#loading-overlay').addClass('hidden');
             setTimeout(function() {
                 $('#loading-overlay').hide();
             }, 500);
         });
 
-        // Livewire-based: Show overlay on loading start, hide on loading stop
+        // Livewire loading states
         document.addEventListener('livewire:loading-start', () => {
-            // Reinstate overlay if previously hidden
             let overlay = document.getElementById('loading-overlay');
             overlay.classList.remove('hidden');
             overlay.style.display = 'flex';
@@ -212,44 +253,42 @@
         });
     </script>
 
-
-    <!-- Include Toastr Partial (if applicable) -->
-    @include('layouts.partials.toastr')
+    <!-- Notification Script -->
     <script>
-document.addEventListener('DOMContentLoaded', function () {
-    @auth
-        let userId = {{ auth()->user()->id }};
-        console.log('Listening for notifications for user:', userId);
+        document.addEventListener('DOMContentLoaded', function () {
+            @auth
+                let userId = {{ auth()->user()->id }};
+                console.log('Listening for notifications for user:', userId);
 
-        if (window.Echo) {
-            window.Echo.private('App.Models.User.1')
-    .listen('.document.status.updated', function (notification) {
-        console.log('Notification received:', notification);
-        updateNotificationUI(notification);
-    });
+                if (window.Echo) {
+                    window.Echo.private('App.Models.User.1')
+                        .listen('.document.status.updated', function (notification) {
+                            console.log('Notification received:', notification);
+                            updateNotificationUI(notification);
+                        });
 
-        } else {
-            console.error('Echo is not defined. Check your app.js.');
-        }
-        window.Echo.connector.pusher.bind_global(function(eventName, data) {
-    console.log("Received event:", eventName, data);
-});
+                    window.Echo.connector.pusher.bind_global(function(eventName, data) {
+                        console.log("Received event:", eventName, data);
+                    });
+                } else {
+                    console.error('Echo is not defined. Check your app.js.');
+                }
 
-        function updateNotificationUI(notification) {
-            console.log('Displaying Toastr notification:', notification);
+                function updateNotificationUI(notification) {
+                    console.log('Displaying Toastr notification:', notification);
 
-            toastr.options = {
-                "closeButton": true,
-                "progressBar": true,
-                "positionClass": "toast-top-right",
-                "timeOut": "5000"
-            };
-            toastr.success(notification.message, 'New Notification');
-        }
-    @endauth
-});
+                    toastr.options = {
+                        "closeButton": true,
+                        "progressBar": true,
+                        "positionClass": "toast-top-right",
+                        "timeOut": "5000"
+                    };
+                    toastr.success(notification.message, 'New Notification');
+                }
+            @endauth
+        });
+    </script>
 
-</script>
-
+    @include('layouts.partials.toastr')
 </body>
 </html>

@@ -18,6 +18,12 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade\Pdf; // Ensure you have barryvdh/laravel-dompdf installed
 use App\Exports\OutgoingsExport;
+use App\Exports\OutgoingsPdfExport;
+use App\Exports\DocumentTypeExport;
+use App\Exports\StatusExport;
+use App\Exports\QuarterlyReportExport;
+use Illuminate\Support\Facades\View; // Add this import for View facade
+use Illuminate\Support\Facades\File; // Add this import for File facade
 
 class OutgoingController extends Controller
 {
@@ -36,6 +42,7 @@ class OutgoingController extends Controller
      */
     public function index()
     {
+        
         // 1) All Outgoings
         $outgoings = Outgoing::with('incoming')->get()->map(function ($item) {
             return [
@@ -422,32 +429,521 @@ class OutgoingController extends Controller
         Log::info('Outgoing import completed successfully.');
         return redirect()->route('admin.outgoings.index')->with('success', 'File(s) imported successfully!');
     }
-    public function generateReport(Request $request)
-    {
-        $request->validate([
-            'document_type' => 'required|string',
-            'export_type'   => 'nullable|string|in:pdf,excel'
-        ]);
+   
+   /**
+ * Get data for quarterly report - used for AJAX endpoint and initial page load
+ */
+private function getQuarterlyReportData($year = null, $specificQuarter = null, $docType = 'all')
+{
+    // Get the current year if not specified
+    $year = $year ?? date('Y');
     
-        $documentType = $request->document_type;
-        $exportType = $request->export_type;
-    
-        // Fetch data
-        $outgoings = Outgoing::where('category', $documentType)->get();
-    
-        // Export logic
-        if ($exportType === 'excel') {
-            return Excel::download(new OutgoingsExport($documentType), "outgoings_report_{$documentType}.xlsx");
-        } elseif ($exportType === 'pdf') {
-            $pdf = Pdf::loadView('reports.outgoings_pdf', compact('outgoings', 'documentType'))
-                      ->setPaper('letter', 'portrait');
-            return $pdf->download("outgoings_report_{$documentType}.pdf");
+    // Base query for incoming and outgoing documents
+    $incomingQuery = Incoming::whereYear('date_received', $year);
+    $outgoingQuery = Outgoing::whereYear('date_released', $year);
+
+    // If a specific quarter is specified
+    if ($specificQuarter) {
+        $incomingQuery->whereRaw('QUARTER(date_received) = ?', [$specificQuarter]);
+        $outgoingQuery->whereRaw('QUARTER(date_released) = ?', [$specificQuarter]);
+    }
+
+    // If a specific document type is requested
+    if ($docType === 'incoming') {
+        $outgoingQuery = clone $outgoingQuery;
+        $outgoingQuery->whereRaw('1 = 0'); // Ensures no outgoings are counted
+    } elseif ($docType === 'outgoing') {
+        $incomingQuery = clone $incomingQuery;
+        $incomingQuery->whereRaw('1 = 0'); // Ensures no incomings are counted
+    }
+
+    // Count documents per quarter
+    $incomingCounts = [];
+    $outgoingCounts = [];
+    $quarterlyDetails = [];
+
+    for ($q = 1; $q <= 4; $q++) {
+        // Skip quarters that don't match the specified quarter
+        if ($specificQuarter && $q != $specificQuarter) {
+            continue;
         }
-    
-        // Return the HTML view if not exporting
-        return view('reports.outgoings', compact('outgoings', 'documentType'));
+
+        $inCount = (clone $incomingQuery)
+            ->whereRaw('QUARTER(date_received) = ?', [$q])
+            ->count();
+        $outCount = (clone $outgoingQuery)
+            ->whereRaw('QUARTER(date_released) = ?', [$q])
+            ->count();
+
+        $incomingCounts[] = $inCount;
+        $outgoingCounts[] = $outCount;
+
+        $quarterlyDetails[] = [
+            'label' => "Q{$q}",
+            'incomingCount' => $inCount,
+            'outgoingCount' => $outCount,
+            'total' => $inCount + $outCount
+        ];
     }
     
+    // Get incoming categories - Modified to use 'quarter' instead of 'quarters'
+    $incomingCategories = [];
+    if ($docType != 'outgoing') {
+        $incomingByCategory = Incoming::select('quarter') // Changed from 'quarters' to 'quarter'
+            ->selectRaw('COUNT(*) as count')
+            ->whereYear('date_received', $year)
+            ->groupBy('quarter') // Changed from 'quarters' to 'quarter'
+            ->get()
+            ->mapWithKeys(function ($item) {
+                $quarter = $item->quarter ? "Q{$item->quarter}" : 'Uncategorized';
+                return [$quarter => $item->count];
+            })
+            ->toArray();
+        
+        $incomingCategories = $incomingByCategory;
+    }
     
+    // Get outgoing categories for distribution chart
+    $outgoingCategories = [];
+    if ($docType != 'incoming') {
+        $outgoingByCategory = Outgoing::select('category')
+            ->selectRaw('COUNT(*) as count')
+            ->whereYear('date_released', $year)
+            ->groupBy('category')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->category ?: 'Uncategorized' => $item->count];
+            })
+            ->toArray();
+        
+        $outgoingCategories = $outgoingByCategory;
+    }
+
+    return [
+        'year' => $year,
+        'quarterFilter' => $specificQuarter,
+        'docType' => $docType,
+        'incomingCounts' => $incomingCounts,
+        'outgoingCounts' => $outgoingCounts,
+        'quarterlyDetails' => $quarterlyDetails,
+        'incomingCategories' => $incomingCategories,
+        'outgoingCategories' => $outgoingCategories,
+        'byQuarter' => true
+    ];
+}
+
+   /**
+    * Get quarterly data for reports via API
+    */
+   /**
+ * Export quarterly report
+ */
+public function quarterlyReport(Request $request)
+{
+    $year = $request->input('year', date('Y'));
+    $specificQuarter = $request->input('quarter');
+    $docType = $request->input('doc_type', 'all');
+
+    $data = $this->getQuarterlyReportData($year, $specificQuarter, $docType);
     
+    return response()->json($data);
+}
+public function quarterlyExport(Request $request)
+{
+    $year = $request->input('year', date('Y'));
+    $type = $request->input('type', 'excel');
+    $quarter = $request->input('quarter');
+    $docType = $request->input('doc_type', 'all');
+
+    // Generate the report data
+    $data = $this->getQuarterlyReportData($year, $quarter, $docType);
+
+    if ($type === 'excel') {
+        return Excel::download(new QuarterlyReportExport($year, $quarter, $docType), "quarterly_report_{$year}.xlsx");
+    } elseif ($type === 'pdf') {
+        // Check if the view exists
+        if (!View::exists('reports.quarterly_pdf')) {
+            // Create reports directory if it doesn't exist
+            if (!File::exists(resource_path('views/reports'))) {
+                File::makeDirectory(resource_path('views/reports'), 0755, true);
+            }
+            
+            // Create a basic PDF template if it doesn't exist
+            $template = '<!DOCTYPE html>
+<html>
+<head>
+    <title>Quarterly Document Report {{ $data->year }}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        body { font-family: DejaVu Sans, Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #0078d4; font-size: 24px; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        table th { background-color: #0078d4; color: white; padding: 8px; text-align: left; border: 1px solid #ddd; }
+        table td { padding: 8px; border: 1px solid #ddd; }
+        table tr:nth-child(even) { background-color: #f2f2f2; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CHED Document Tracking System</h1>
+        <h2>Quarterly Document Report</h2>
+        <p><strong>Period:</strong> 
+            @if(isset($data->quarterFilter))
+                Q{{ $data->quarterFilter }} {{ $data->year }}
+            @else
+                Full Year {{ $data->year }}
+            @endif
+        </p>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Quarter</th>
+                <th>Incoming Documents</th>
+                <th>Outgoing Documents</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($data->quarterlyDetails as $quarter)
+            <tr>
+                <td>{{ $quarter["label"] }}</td>
+                <td>{{ $quarter["incomingCount"] }}</td>
+                <td>{{ $quarter["outgoingCount"] }}</td>
+                <td>{{ $quarter["incomingCount"] + $quarter["outgoingCount"] }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>Generated on: {{ date("F d, Y") }}</p>
+    </div>
+</body>
+</html>';
+            
+            // Save the template
+            File::put(resource_path('views/reports/quarterly_pdf.blade.php'), $template);
+        }
+        
+        try {
+            // Convert array to object for easier blade access
+            $dataObject = json_decode(json_encode($data));
+            
+            $pdf = PDF::loadView('reports.quarterly_pdf', ['data' => $dataObject]);
+            return $pdf->download("quarterly_report_{$year}.pdf");
+        } catch (\Exception $e) {
+            // Log the error
+            Log::error('PDF generation error: ' . $e->getMessage());
+            
+            // Return a fallback response with error message
+            return response()->json([
+                'error' => 'Could not generate PDF: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+}
+   /**
+    * Generate document-specific reports
+    */
+   public function generateReport(Request $request)
+   {
+       $request->validate([
+           'document_type' => 'required|string',
+           'export_type'   => 'nullable|string|in:pdf,excel'
+       ]);
+   
+       $documentType = $request->document_type;
+       $exportType = $request->export_type;
+   
+       // Fetch data
+       $outgoings = Outgoing::where('category', $documentType)->get();
+   
+       // Export logic
+       if ($exportType === 'excel') {
+           return Excel::download(new OutgoingsExport($documentType), "outgoings_report_{$documentType}.xlsx");
+       } elseif ($exportType === 'pdf') {
+           $pdf = Pdf::loadView('reports.outgoings_pdf', compact('outgoings', 'documentType'))
+                     ->setPaper('letter', 'portrait');
+           return $pdf->download("outgoings_report_{$documentType}.pdf");
+       }
+   
+       // Return the HTML view if not exporting
+       return view('reports.outgoings', compact('outgoings', 'documentType'));
+   }
+   
+   /**
+    * Generate data for document type report.
+    */
+   public function documentTypeReport(Request $request)
+   {
+       $year = $request->input('year', date('Y'));
+       $specificQuarter = $request->input('quarter');
+       $docType = $request->input('docType', 'all');
+
+       // Base query
+       $query = Outgoing::whereYear('date_released', $year);
+
+       // If a specific quarter is specified
+       if ($specificQuarter) {
+           $query->whereRaw('QUARTER(date_released) = ?', [$specificQuarter]);
+       }
+
+       // If a specific document type is specified
+       if ($docType !== 'all') {
+           $query->where('category', $docType);
+       }
+
+       // Get categories and counts
+       $categories = $query->select('category')
+           ->selectRaw('COUNT(*) as count')
+           ->groupBy('category')
+           ->get();
+
+       // Calculate total for percentages
+       $total = $categories->sum('count');
+
+       // Format data for the chart
+       $categoryData = $categories->map(function ($item) use ($total) {
+           return [
+               'name' => $item->category ?: 'Uncategorized',
+               'count' => $item->count,
+               'percentage' => $total > 0 ? round(($item->count / $total) * 100, 1) : 0
+           ];
+       })->toArray();
+
+       return response()->json([
+           'year' => $year,
+           'categories' => $categoryData
+       ]);
+   }
+
+   /**
+    * Generate data for status report.
+    */
+   public function statusReport(Request $request)
+   {
+       $year = $request->input('year', date('Y'));
+       $specificQuarter = $request->input('quarter');
+       $docType = $request->input('docType', 'all');
+
+       // Base query
+       $query = Outgoing::whereYear('date_released', $year);
+
+       // If a specific quarter is specified
+       if ($specificQuarter) {
+           $query->whereRaw('QUARTER(date_released) = ?', [$specificQuarter]);
+       }
+
+       // If a specific document type is specified
+       if ($docType !== 'all') {
+           $query->where('category', $docType);
+       }
+
+       // Get statuses and counts
+       $statuses = $query->select('status')
+           ->selectRaw('COUNT(*) as count')
+           ->groupBy('status')
+           ->get();
+
+       // Calculate total for percentages
+       $total = $statuses->sum('count');
+
+       // Format data for the chart
+       $statusData = $statuses->map(function ($item) use ($total) {
+           return [
+               'name' => $item->status ?: 'Undefined',
+               'count' => $item->count,
+               'percentage' => $total > 0 ? round(($item->count / $total) * 100, 1) : 0
+           ];
+       })->toArray();
+
+       return response()->json([
+           'year' => $year,
+           'statuses' => $statusData
+       ]);
+   }
+
+   /**
+    * Export document type report to Excel or PDF.
+    */
+   public function documentTypeExport(Request $request)
+   {
+       $year = $request->input('year', date('Y'));
+       $type = $request->input('type', 'excel');
+       $quarter = $request->input('quarter');
+
+       // Get data (reuse document type report logic)
+       $data = $this->documentTypeReport($request)->getData();
+       
+       if ($type === 'excel') {
+           // Excel export
+           return Excel::download(new DocumentTypeExport($data), "document_type_report_{$year}.xlsx");
+       } else {
+           // PDF export
+           $pdf = PDF::loadView('reports.document_type_pdf', ['data' => $data]);
+           return $pdf->download("document_type_report_{$year}.pdf");
+       }
+   }
+
+   /**
+    * Export status report to Excel or PDF.
+    */
+   public function statusExport(Request $request)
+   {
+       $year = $request->input('year', date('Y'));
+       $type = $request->input('type', 'excel');
+       $quarter = $request->input('quarter');
+
+       // Get data (reuse status report logic)
+       $data = $this->statusReport($request)->getData();
+       
+       if ($type === 'excel') {
+           // Excel export
+           return Excel::download(new StatusExport($data), "status_report_{$year}.xlsx");
+       } else {
+           // PDF export
+           $pdf = PDF::loadView('reports.status_pdf', ['data' => $data]);
+           return $pdf->download("status_report_{$year}.pdf");
+       }
+   }
+   
+   /**
+    * Export reports in various formats
+    */
+// Add this function to your OutgoingController to debug the export issue
+public function export(Request $request)
+{
+    Log::info('Export report request received', $request->all());
+
+    // Log the request details for debugging
+    Log::info('Export request received', [
+        'format' => $request->input('format', 'pdf'),
+        'quarter' => $request->input('quarter'),
+        'doc_type' => $request->input('doc_type', 'all'),
+        'year' => $request->input('year', date('Y'))
+    ]);
+    
+    // Get parameters
+    $format = $request->input('format', 'pdf');
+    $quarter = $request->input('quarter');
+    $docType = $request->input('doc_type', 'all');
+    $year = $request->input('year', date('Y'));
+    
+    // Get report data
+    $data = $this->getQuarterlyReportData($year, $quarter, $docType);
+    
+    // Create a filename
+    $filename = "document_report_{$year}" . ($quarter ? "_Q{$quarter}" : "") . ($format === 'excel' ? ".xlsx" : ".pdf");
+    
+    Log::info('Generating export file', ['filename' => $filename, 'format' => $format]);
+    
+    try {
+        if ($format === 'excel') {
+            // Make sure the view/template exists before trying to download
+            return Excel::download(
+                new QuarterlyReportExport($data), 
+                $filename
+            );
+        } else {
+            // Create a simple PDF view if it doesn't exist
+            if (!View::exists('reports.quarterly_pdf')) {
+                $this->createDefaultPdfTemplate();
+            }
+            
+            // Convert array to object for easier blade access
+            $dataObject = json_decode(json_encode($data));
+            
+            // Generate PDF
+            $pdf = PDF::loadView('reports.quarterly_pdf', ['data' => $dataObject]);
+            return $pdf->download($filename);
+        }
+    } catch (\Exception $e) {
+        // Log the error
+        Log::error('Export error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        // Return a fallback response with error message
+        return response()->json([
+            'error' => 'Could not generate export: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// Add this helper function to create a default PDF template
+private function createDefaultPdfTemplate()
+{
+    // Create reports directory if it doesn't exist
+    if (!File::exists(resource_path('views/reports'))) {
+        File::makeDirectory(resource_path('views/reports'), 0755, true);
+    }
+    
+    // Create a basic PDF template if it doesn't exist
+    $template = <<<'EOT'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quarterly Document Report {{ $data->year }}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <style>
+        body { font-family: DejaVu Sans, Arial, sans-serif; margin: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #0078d4; font-size: 24px; margin: 10px 0; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        table th { background-color: #0078d4; color: white; padding: 8px; text-align: left; border: 1px solid #ddd; }
+        table td { padding: 8px; border: 1px solid #ddd; }
+        table tr:nth-child(even) { background-color: #f2f2f2; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CHED Document Tracking System</h1>
+        <h2>Quarterly Document Report</h2>
+        <p><strong>Period:</strong> 
+            @if(isset($data->quarterFilter))
+                Q{{ $data->quarterFilter }} {{ $data->year }}
+            @else
+                Full Year {{ $data->year }}
+            @endif
+        </p>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Quarter</th>
+                <th>Incoming Documents</th>
+                <th>Outgoing Documents</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if(isset($data->quarterlyDetails))
+                @foreach($data->quarterlyDetails as $quarter)
+                <tr>
+                    <td>{{ $quarter->label }}</td>
+                    <td>{{ $quarter->incomingCount }}</td>
+                    <td>{{ $quarter->outgoingCount }}</td>
+                    <td>{{ $quarter->incomingCount + $quarter->outgoingCount }}</td>
+                </tr>
+                @endforeach
+            @endif
+        </tbody>
+    </table>
+    
+    <div class="footer">
+        <p>Generated on: {{ date("F d, Y") }}</p>
+    </div>
+</body>
+</html>
+EOT;
+    
+    // Save the template
+    File::put(resource_path('views/reports/quarterly_pdf.blade.php'), $template);
+}
 }

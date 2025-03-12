@@ -37,6 +37,8 @@ class CavsOsd extends Model
         'program_level',
         'status_of_the_program',
         'date_started',
+        'semester1',
+        'semester2',
         'date_ended',
         'graduation_date',
         'units_earned',

@@ -12,7 +12,10 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-
+use Spatie\Permission\Models\Role; // Ensure Spatie roles are used (if applicable)
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\DetailedDocumentsExport;
 class DocumentController extends Controller
 {
     
@@ -84,6 +87,129 @@ class DocumentController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
+    
+public function getReportStatistics()
+{
+    // Force JSON output regardless of what happens
+    header('Content-Type: application/json');
+    
+    try {
+        $currentYear = Carbon::now()->year;
+
+        // Quarterly Document Statistics
+        $quarterlyDocuments = Document::selectRaw('
+            QUARTER(created_at) as quarter, 
+            COUNT(*) as total_documents,
+            SUM(CASE WHEN approval_status = "Accepted" THEN 1 ELSE 0 END) as accepted_documents,
+            SUM(CASE WHEN approval_status = "Rejected" THEN 1 ELSE 0 END) as rejected_documents,
+            SUM(CASE WHEN status = "Archived" THEN 1 ELSE 0 END) as archived_documents
+        ')
+        ->whereYear('created_at', $currentYear)
+        ->groupBy('quarter')
+        ->orderBy('quarter')
+        ->get();
+
+        // Document Type Distribution
+        $documentTypeDistribution = Document::selectRaw('
+            document_type, 
+            COUNT(*) as total_count,
+            SUM(CASE WHEN approval_status = "Accepted" THEN 1 ELSE 0 END) as accepted_count
+        ')
+        ->groupBy('document_type')
+        ->get();
+
+        // Force JSON direct output, bypass Laravel's response system
+        echo json_encode([
+            'quarterlyDocuments' => $quarterlyDocuments->toArray(),
+            'documentTypeDistribution' => $documentTypeDistribution->toArray(),
+            'currentYear' => $currentYear
+        ]);
+        exit; // Terminate execution to prevent any further HTML output
+        
+    } catch (\Exception $e) {
+        Log::error('Report Statistics Error: ' . $e->getMessage());
+        
+        // Return error as direct JSON
+        echo json_encode([
+            'error' => true,
+            'message' => 'An error occurred while fetching report statistics',
+            'details' => $e->getMessage()
+        ]);
+        exit;
+    }
+}
+public function generateEnhancedReport(Request $request)
+{
+    $validated = $request->validate([
+        'start_date' => 'nullable|date',
+        'end_date' => 'nullable|date|after_or_equal:start_date',
+        'status' => 'nullable|string',
+        'document_type' => 'nullable|string',
+        'export_type' => 'required|in:pdf,excel',
+        'quarter' => 'nullable|integer|between:1,4'
+    ]);
+
+    $query = Document::query();
+
+    // Apply date range filter
+    if ($request->filled('start_date') && $request->filled('end_date')) {
+        $query->whereBetween('created_at', [
+            Carbon::parse($validated['start_date'])->startOfDay(), 
+            Carbon::parse($validated['end_date'])->endOfDay()
+        ]);
+    }
+
+    // Apply quarter filter
+    if ($request->filled('quarter')) {
+        $query->whereRaw('QUARTER(created_at) = ?', [$validated['quarter']]);
+    }
+
+    // Apply status filter
+    if ($request->filled('status')) {
+        $query->where('status', $validated['status']);
+    }
+
+    // Apply document type filter
+    if ($request->filled('document_type')) {
+        $query->where('document_type', $validated['document_type']);
+    }
+
+    $documents = $query->get();
+
+    // Calculate additional statistics for the report
+    $statistics = [
+        'total_documents' => $documents->count(),
+        'accepted_documents' => $documents->where('approval_status', 'Accepted')->count(),
+        'rejected_documents' => $documents->where('approval_status', 'Rejected')->count(),
+        'document_types' => $documents->groupBy('document_type')->map->count()->toArray()
+    ];
+
+    // Generate export based on type
+    if ($validated['export_type'] === 'pdf') {
+        return $this->exportPDF($documents, $statistics);
+    } else {
+        return $this->exportExcel($documents, $statistics);
+    }
+}
+
+protected function exportPDF($documents, $statistics)
+{
+    $pdf = PDF::loadView('exports.documents_detailed_pdf', [
+        'documents' => $documents,
+        'statistics' => $statistics,
+        'reportTitle' => 'Detailed Document Management Report',
+        'generatedAt' => Carbon::now()->format('Y-m-d H:i:s')
+    ]);
+
+    return $pdf->download('document_detailed_report_' . Carbon::now()->format('YmdHis') . '.pdf');
+}
+
+protected function exportExcel($documents, $statistics)
+{
+    // You might want to create a more detailed ExportClass
+    return Excel::download(new DetailedDocumentsExport($documents, $statistics), 'document_detailed_report_' . Carbon::now()->format('YmdHis') . '.xlsx');
+}
+
     public function upload(Request $request)
     {
         // Validate the incoming request data
@@ -289,7 +415,7 @@ class DocumentController extends Controller
     } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
         abort(403, 'You do not have permission to assign tracking to this document.');
     } catch (\Exception $e) {
-        \Log::error('Assign Tracking Error: ' . $e->getMessage());
+        Log::error('Assign Tracking Error: ' . $e->getMessage());
         return redirect()->back()->with('error', 'An error occurred while assigning the tracking number.');
     }
 }

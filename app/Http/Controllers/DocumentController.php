@@ -22,6 +22,10 @@ use Vonage\SMS\Message\SMS as VonageSMS;
 use App\Models\Incoming; // Add at the top of the file if not present
 use App\Notifications\DocumentStatusNotification;
 use Spatie\Permission\Models\Role; // Ensure Spatie roles are used (if applicable)
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\DetailedDocumentsExport;
+
 
 class DocumentController extends Controller
 {
@@ -57,6 +61,32 @@ class DocumentController extends Controller
             throw new \Exception('Unable to send OTP via SMS.');
         }
     }
+    public function show($id)
+{
+    $document = Document::findOrFail($id);
+    $user = auth()->user();
+    
+    // Return appropriate view based on user role
+    if ($user->hasRole('admin')) {
+        return view('admin.documents.show', compact('document'));
+    } elseif ($user->hasRole('Records')) {
+        return view('records.documents.show', compact('document'));
+    } elseif ($user->hasRole('RegionalDirector')) {
+        return view('regional_director.documents.show', compact('document'));
+    } elseif ($user->hasRole('Supervisor')) {
+        return view('supervisor.documents.show', compact('document'));
+    } elseif ($user->hasRole('HR')) {
+        return view('hr.documents.show', compact('document'));
+    } elseif ($user->hasRole('Technical')) {
+        return view('technical.documents.show', compact('document'));
+    } elseif ($user->hasRole('Unifast')) {
+        return view('unifast.documents.show', compact('document'));
+    } elseif ($user->hasRole('Accounting')) {
+        return view('accounting.documents.show', compact('document'));
+    } else {
+        return view('user.documents.show', compact('document'));
+    }
+}
     public function index(Request $request)
     {
         // Auto‑archive: update documents older than 30 days (if not already archived)
@@ -575,19 +605,21 @@ public function bulkApproval(Request $request)
         'doc_ids.*' => 'integer|exists:documents,id',
         'approval_status' => 'required|string|in:Accepted,Rejected',
     ]);
-
+    $approvalStatus = in_array($validated['approval_status'], ['Approved', 'Accepted']) 
+    ? 'Accepted' 
+    : 'Rejected';
     try {
         $documents = Document::whereIn('id', $validated['doc_ids'])->get();
         foreach ($documents as $doc) {
-            $doc->approval_status = $validated['approval_status'];
-            $doc->status = ($validated['approval_status'] === 'Accepted') ? 'Approved' : 'Rejected';
+            $doc->approval_status = $approvalStatus;
+            $doc->status = ($approvalStatus === 'Accepted') ? 'Approved' : 'Rejected';
             $doc->status_details = json_encode([
-                'message' => 'Document has been ' . strtolower($validated['approval_status']),
+                'message' => 'Document has been ' . strtolower($approvalStatus),
                 'timestamp' => Carbon::now()->toDateTimeString(),
             ]);
             $doc->save();
         
-            // If accepted, create an Incoming record
+            // If approved, create an Incoming record
             if($doc->approval_status === 'Accepted'){
                 $this->createIncomingFromDocument($doc);
             }
@@ -595,10 +627,16 @@ public function bulkApproval(Request $request)
             $this->sendApprovalEmail($doc);
         }
 
-        return redirect()->back()->with('success', 'Bulk approval/rejection completed successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Bulk approval/rejection completed successfully.'
+        ]);
     } catch (\Exception $e) {
         Log::error('Bulk Approval Error: ' . $e->getMessage());
-        return redirect()->back()->with('error', 'Error during bulk approval/rejection.');
+        return response()->json([
+            'success' => false,
+            'message' => 'Error during bulk approval/rejection: ' . $e->getMessage()
+        ], 500);
     }
 }
 private function sendApprovalEmail(Document $document)
@@ -649,26 +687,49 @@ private function createIncomingFromDocument(Document $document)
         'quarter'          => $quarter,        // Persisted quarter (1, 2, 3, or 4)
         // ... (any other fields)
     ]);
-}
+}// In DocumentController.php - Complete getDocuments method with Released filter
+
 public function getDocuments(Request $request)
 {
     $user = auth()->user();
     $query = Document::with(['user', 'routedUser']);
 
     if (!$user->hasRole(['admin', 'Records', 'RegionalDirector'])) {
-        $query->where('routed_to', $user->id);
+        $query->where(function($q) use ($user) {
+            $q->where('routed_to', $user->id)
+              ->orWhereHas('user', function ($subQuery) use ($user) {
+                  $subQuery->where('id', $user->id);
+              });
+        });
     }
 
+    // Handle all status filters consistently
     if ($request->filled('status') && $request->input('status') !== '') {
-        if ($request->input('status') === 'today') {
+        $status = $request->input('status');
+        
+        if ($status === 'today') {
             $query->whereDate('created_at', Carbon::today());
-        } elseif ($request->input('status') === 'Archived') {
+        } elseif ($status === 'Released') {
+            // Specifically handle Released status
+            $query->where('status', 'Released');
+        } elseif ($status === 'Archived') {
             $query->where('status', 'Archived');
+        } elseif ($status === 'Pending' || $status === 'Approved' || $status === 'Rejected') {
+            $query->where('status', $status);
         } else {
-            $query->where('status', $request->input('status'));
+            // For any other status value
+            $query->where('status', $status);
         }
+        
+        // Log the query for debugging
+        Log::info('Document filter query', [
+            'status' => $status,
+            'query' => $query->toSql(),
+            'bindings' => $query->getBindings()
+        ]);
     }
 
+    // Continue with the rest of the method as before
     if ($request->filled('role') && $request->input('role') !== '') {
         $query->whereHas('user', function ($q) use ($request) {
             $q->where('role', $request->input('role'));
@@ -701,7 +762,76 @@ public function getDocuments(Request $request)
         ->rawColumns(['checkbox', 'actions', 'routed_to'])
         ->make(true);
 }
+/**
+ * Direct document upload without OTP verification (Admin only)
+ *
+ * @param  \Illuminate\Http\Request  $request
+ * @return \Illuminate\Http\RedirectResponse
+ */
+public function directUpload(Request $request)
+{
+    // Validate the request
+    $validated = $request->validate([
+        'email'         => 'required|email',
+        'full_name'     => 'required|string|max:255',
+        'document_type' => 'required|string',
+        'phone_number'  => 'required|string|regex:/^\+?[0-9\s\-]{7,15}$/',
+        'document'      => 'required|file|mimes:pdf,doc,docx,png,jpg,jpeg|max:5120',
+        'remarks'       => 'nullable|string'
+    ]);
 
+    try {
+        // Create a unique tracking number and document ID
+        $documentId = strtoupper(Str::random(10));
+        $trackingNumber = strtoupper(Str::random(12));
+        
+        // Ensure tracking number is unique
+        while (Document::where('tracking_number', $trackingNumber)->exists()) {
+            $trackingNumber = strtoupper(Str::random(12));
+        }
+
+        // Store the uploaded file
+        $file = $request->file('document');
+        $path = 'documents/' . $documentId . '/' . $file->getClientOriginalName();
+        Storage::disk('public')->putFileAs(
+            'documents/' . $documentId, 
+            $file, 
+            $file->getClientOriginalName()
+        );
+
+        // Create the document record with admin-specified status
+        $document = Document::create([
+            'tracking_number' => $trackingNumber,
+            'email'           => $validated['email'],
+            'phone_number'    => $validated['phone_number'],
+            'full_name'       => $validated['full_name'],
+            'document_type'   => $validated['document_type'],
+            'file_path'       => $path,
+            'status'          => $request->input('status', 'Under Review'),  // Default or admin-chosen status
+            'approval_status' => $request->input('approval_status', 'Pending'), // Default or admin-chosen status
+            'status_details'  => json_encode([
+                'message'   => $request->input('remarks', 'Document uploaded by administrator.'),
+                'remarks'   => $request->input('remarks', ''),
+                'timestamp' => now()->toDateTimeString(),
+            ]),
+        ]);
+
+        // If a user is specified for routing, update the document
+        if ($request->filled('routed_to')) {
+            $user = User::findOrFail($request->input('routed_to'));
+            $document->routed_to = $user->id;
+            $document->save();
+        }
+
+        return redirect()->route('admin.documents.index')
+            ->with('success', 'Document uploaded successfully with tracking number: ' . $trackingNumber);
+    } catch (\Exception $e) {
+        Log::error('Direct Upload Error: ' . $e->getMessage());
+        return redirect()->back()
+            ->with('error', 'An error occurred while uploading: ' . $e->getMessage())
+            ->withInput();
+    }
+}
 public function update(Request $request, $id)
 {
     $document = Document::findOrFail($id);
@@ -806,6 +936,164 @@ public function release($id)
 
     return response()->json(['message' => 'Document successfully released.']);
 }
+/**
+ * Get report statistics in JSON format.
+ * This method uses manual calculation of quarters to avoid SQL compatibility issues.
+ * 
+ * @return \Illuminate\Http\JsonResponse
+ */
+// In app/Http/Controllers/DocumentController.php
+// Replace the getReportStatistics method with this improved version:
+// In app/Http/Controllers/DocumentController.php
+// Replace the getReportStatistics method with this improved version:
 
+public function getReportStatistics()
+{
+    try {
+        // Always set content type to JSON
+        header('Content-Type: application/json');
+        
+        $currentYear = Carbon::now()->year;
+        $quarters = [1, 2, 3, 4];
+        $quarterlyDocuments = [];
+
+        // Generate data for each quarter manually to avoid SQL function compatibility issues
+        foreach ($quarters as $quarter) {
+            $startMonth = ($quarter - 1) * 3 + 1;
+            $endMonth = $quarter * 3;
+            
+            $startDate = Carbon::create($currentYear, $startMonth, 1)->startOfMonth();
+            $endDate = Carbon::create($currentYear, $endMonth, 1)->endOfMonth();
+            
+            $documents = Document::whereBetween('created_at', [$startDate, $endDate])->get();
+            
+            $quarterlyDocuments[] = [
+                'quarter' => $quarter,
+                'total_documents' => $documents->count(),
+                'accepted_documents' => $documents->whereIn('approval_status', ['Approved', 'Accepted'])->count(),
+                'rejected_documents' => $documents->where('approval_status', 'Rejected')->count(),
+                'archived_documents' => $documents->where('status', 'Archived')->count()
+            ];
+        }
+
+        // Document type distribution - more database-agnostic approach
+        $allDocuments = Document::whereNotNull('document_type')
+                              ->where('document_type', '!=', '')
+                              ->get();
+        
+        $documentTypes = $allDocuments->groupBy('document_type')->map(function ($group) {
+            return [
+                'document_type' => $group->first()->document_type,
+                'total_count' => $group->count(),
+                'accepted_count' => $group->whereIn('approval_status', ['Approved', 'Accepted'])->count()
+            ];
+        })->values()->toArray();
+        
+        // Ensure we have at least one document type
+        if (empty($documentTypes)) {
+            $documentTypes = [[
+                'document_type' => 'No Documents',
+                'total_count' => 0,
+                'accepted_count' => 0
+            ]];
+        }
+
+        // Build response data
+        $data = [
+            'quarterlyDocuments' => $quarterlyDocuments,
+            'documentTypeDistribution' => $documentTypes,
+            'currentYear' => $currentYear,
+            'timestamp' => now()->format('Y-m-d H:i:s')
+        ];
+
+        // Log successful response generation
+        Log::info('Report statistics generated successfully');
+        
+        // Return simplified JSON response
+        return response()->json($data);
+        
+    } catch (\Exception $e) {
+        Log::error('Report Statistics Error: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+        
+        // Return error as JSON instead of throwing exception which would generate HTML
+        return response()->json([
+            'error' => true,
+            'message' => 'An error occurred while fetching report statistics',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+public function generateEnhancedReport(Request $request)
+{
+    $validated = $request->validate([
+        'start_date' => 'nullable|date',
+        'end_date' => 'nullable|date|after_or_equal:start_date',
+        'status' => 'nullable|string',
+        'document_type' => 'nullable|string',
+        'export_type' => 'required|in:pdf,excel',
+        'quarter' => 'nullable|integer|between:1,4'
+    ]);
+
+    $query = Document::query();
+
+    // Apply date range filter
+    if ($request->filled('start_date') && $request->filled('end_date')) {
+        $query->whereBetween('created_at', [
+            Carbon::parse($validated['start_date'])->startOfDay(), 
+            Carbon::parse($validated['end_date'])->endOfDay()
+        ]);
+    }
+
+    // Apply quarter filter
+    if ($request->filled('quarter')) {
+        $query->whereRaw('QUARTER(created_at) = ?', [$validated['quarter']]);
+    }
+
+    // Apply status filter
+    if ($request->filled('status')) {
+        $query->where('status', $validated['status']);
+    }
+
+    // Apply document type filter
+    if ($request->filled('document_type')) {
+        $query->where('document_type', $validated['document_type']);
+    }
+
+    $documents = $query->get();
+
+    // Calculate additional statistics for the report
+    $statistics = [
+        'total_documents' => $documents->count(),
+        'accepted_documents' => $documents->where('approval_status', 'Accepted')->count(),
+        'rejected_documents' => $documents->where('approval_status', 'Rejected')->count(),
+        'document_types' => $documents->groupBy('document_type')->map->count()->toArray()
+    ];
+
+    // Generate export based on type
+    if ($validated['export_type'] === 'pdf') {
+        return $this->exportPDF($documents, $statistics);
+    } else {
+        return $this->exportExcel($documents, $statistics);
+    }
+}
+
+protected function exportPDF($documents, $statistics)
+{
+    $pdf = PDF::loadView('exports.documents_detailed_pdf', [
+        'documents' => $documents,
+        'statistics' => $statistics,
+        'reportTitle' => 'Detailed Document Management Report',
+        'generatedAt' => Carbon::now()->format('Y-m-d H:i:s')
+    ]);
+
+    return $pdf->download('document_detailed_report_' . Carbon::now()->format('YmdHis') . '.pdf');
+}
+
+protected function exportExcel($documents, $statistics)
+{
+    // You might want to create a more detailed ExportClass
+    return Excel::download(new DetailedDocumentsExport($documents, $statistics), 'document_detailed_report_' . Carbon::now()->format('YmdHis') . '.xlsx');
+}
 
 }

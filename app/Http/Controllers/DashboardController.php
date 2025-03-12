@@ -10,7 +10,9 @@ use App\Models\GmailToken;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-
+use App\Models\SoMasterList;
+use App\Models\Cav;
+use Illuminate\Support\Facades\Storage;
 class DashboardController extends Controller
 {
     public function index()
@@ -70,13 +72,14 @@ class DashboardController extends Controller
                 $recentDocuments = Document::orderBy('updated_at', 'desc')
                     ->take(10)
                     ->get();
+                    $soMasterListCount = SoMasterList::count();
 
                 // Users for management section
                 $users = User::with('roles')
                     ->orderBy('created_at', 'desc')
                     ->take(10)
                     ->get();
-
+                $cavCount = Cav::count();
                 // Additional stats: total Gmail authentications and total registered users
                 $gmailLogins = GmailToken::count();
                 $totalUsers = User::count();
@@ -88,7 +91,9 @@ class DashboardController extends Controller
                     'monthlyDocuments',
                     'upcomingDeadlines',
                     'recentDocuments',
+                    'cavCount',
                     'users',
+                    'soMasterListCount',
                     'gmailLogins',
                     'totalUsers'
                 ));
@@ -117,7 +122,15 @@ class DashboardController extends Controller
 
     public function details($id)
     {
-        $document = Document::findOrFail($id);
-        return view('admin.documents.partials.details', compact('document'));
+        try {
+            $document = Document::findOrFail($id);
+            return view('admin.documents._detailss', compact('document'));
+        } catch (\Exception $e) {
+            Log::error('Document Details Error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Document not found',
+                'message' => 'The requested document could not be found.'
+            ], 404);
+        }
     }
 }

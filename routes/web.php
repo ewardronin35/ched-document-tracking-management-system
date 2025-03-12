@@ -25,9 +25,13 @@ use App\Http\Controllers\RecaptchaController;
 use App\Http\Controllers\DocumentAuthenticationController;
 use App\Http\Controllers\CertificationController;
 use App\Http\Controllers\CondobpobController;
+use App\Http\Controllers\CavAbroadController;
+use App\Http\Controllers\CavLocalController;
+use App\Models\Cav;
 use App\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
+use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 Route::get('/', function () {
     return view('welcome');
@@ -95,6 +99,37 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
 // Admin Routes
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
+
+    Route::get('quarterly-data', [App\Http\Controllers\OutgoingController::class, 'quarterlyReport'])
+        ->name('reports.quarterly-data');
+    Route::get('document-type-data', [App\Http\Controllers\OutgoingController::class, 'documentTypeReport'])
+        ->name('reports.document-type-data');
+    Route::get('status-data', [App\Http\Controllers\OutgoingController::class, 'statusReport'])
+        ->name('reports.status-data');
+
+    // Export endpoints
+    Route::get('quarterly-export', [App\Http\Controllers\OutgoingController::class, 'quarterlyExport'])
+        ->name('reports.quarterly-export');
+    Route::get('document-type-export', [App\Http\Controllers\OutgoingController::class, 'documentTypeExport'])
+        ->name('reports.document-type-export');
+    Route::get('status-export', [App\Http\Controllers\OutgoingController::class, 'statusExport'])
+        ->name('reports.status-export');
+
+    // General export for reports tab
+    Route::get('export', [App\Http\Controllers\OutgoingController::class, 'export'])
+        ->name('reports.export');
+
+
+Route::get('/generate-report', [App\Http\Controllers\OutgoingController::class, 'generateReport'])
+    ->name('generate-report');
+
+
+
+
+
+
+
+
     Route::post('gmail/send', [GmailController::class, 'sendEmail'])->name('sendEmail');
     Route::get('gmail/emails', [GmailController::class, 'listEmails'])->name('gmail.emails');
     Route::get('/outgoings/report', [OutgoingController::class, 'generateReport'])->name('outgoings.report');
@@ -103,11 +138,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::post('heis/import', [HEIController::class, 'import'])->name('heis.import');
     Route::get('heis/import', [HEIController::class, 'showImportForm'])->name('heis.import.form');
     Route::get('/emails', [GmailController::class, 'listEmails'])->name('gmail.emails');
-    Route::get('/cav/local', [CavController::class, 'getLocalCavRecords'])->name('cav.local');
-    Route::get('/cav/abroad', [CavController::class, 'getAbroadCavRecords'])->name('cav.abroad');
+    Route::get('/cav/local', [CavLocalController::class, 'data'])->name('cav.local.all');
+    Route::get('/cav/abroad', [CavAbroadController::class, 'data'])->name('cav.abroad.all');
     Route::resource('heis', HEIController::class);
     Route::get('/gmail/contacts', [GmailController::class, 'getContacts'])->name('gmail.getContacts');
     Route::get('/gmail/attachment/{emailId}/{attachmentId}/{filename}', [GmailController::class, 'downloadAttachment'])->name('gmail.downloadAttachment');
+    Route::get('/reset-token', [GmailController::class, 'resetToken'])->name('gmail.resetToken');
+    Route::get('/back-to-dashboard', [GmailController::class, 'backToDashboard'])->name('gmail.backToDashboard');
+    Route::get('/documents/generate-report', [DocumentController::class, 'generateEnhancedReport'])->name('documents.generate-report');
+    Route::get('/documents/export-pdf', [DocumentController::class, 'exportPDF'])->name('documents.export-pdf');
+    Route::get('/documents/export-excel', [DocumentController::class, 'exportExcel'])->name('documents.export-excel');
+   
+    // Attachment Downloads
+    Route::get('/logout', [GmailController::class, 'logout'])->name('gmail.logout');
+
+    Route::get('/attachment/{emailId}/{attachmentId}/{filename}', [GmailController::class, 'downloadAttachment'])
+        ->name('gmail.downloadAttachment');
 
     Route::post('cavs/import-excel', [CavController::class, 'importExcel'])->name('cavs.import-excel');
     Route::get('gmail/sent', [GmailController::class, 'listSentEmails'])->name('gmail.sent');
@@ -172,16 +218,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::post('/documents/bulk-approval', [DocumentController::class, 'bulkApproval'])->name('documents.bulkApproval');
     Route::get('/documents/getDocuments', [DocumentController::class, 'getDocuments'])->name('documents.getDocuments');
     Route::put('/incomings/{incoming}/release', [IncomingController::class, 'release'])->name('incomings.release');
-    Route::resource('documents', \App\Http\Controllers\DocumentController::class);
-    
+    Route::get('/documents/get-report-statistics', [DocumentController::class, 'getReportStatistics'])
+    ->name('documents.get-report-statistics');
     Route::resource('incomings', IncomingController::class);
     Route::get('cavs_osd/all', [CavOsdController::class, 'data'])->name('cavs_osd.all');
     Route::get('certifications/all', [CertificationController::class, 'data'])->name('certifications.all');
     Route::get('document_authentications/all', [DocumentAuthenticationController::class, 'data'])->name('document_authentications.all');
-
+    Route::post('/documents/direct-upload', [DocumentController::class, 'directUpload'])
+    ->name('documents.direct-upload');
     Route::patch('/manage/users/toggle-login/{id}', [AdminUserController::class, 'toggleLoginEligibility'])
     ->name('manage.users.toggle-login');
-
+    Route::get('/reports/quarterly-data', [OutgoingController::class, 'quarterlyReport']);
+    Route::get('/reports/quarterly-export', [OutgoingController::class, 'quarterlyExport']);
+    Route::get('/documents/{id}/details', [DashboardController::class, 'details'])->name('documents.details');
 
     // Fetch Users Data for DataTables
     Route::get('/manage-users/data', [AdminUserController::class, 'getUsers'])->name('manage.users.data');
@@ -202,7 +251,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     // Import Users
     Route::get('/manage-users/import/form', [AdminUserController::class, 'showImportForm'])->name('manage.users.import.form');
     Route::post('/manage-users/import', [AdminUserController::class, 'import'])->name('manage.users.import');
-
+    Route::get('/quarterly-data', [OutgoingController::class, 'quarterlyReport'])->name('quarterly-data');
+    Route::get('/document-type-data', [OutgoingController::class, 'documentTypeReport'])->name('document-type-data');
+    Route::get('/status-data', [OutgoingController::class, 'statusReport'])->name('status-data');
+    Route::get('/quarterly-export', [OutgoingController::class, 'quarterlyExport'])->name('quarterly-export');
+    Route::get('/document-type-export', [OutgoingController::class, 'documentTypeExport'])->name('document-type-export');
+    Route::get('/status-export', [OutgoingController::class, 'statusExport'])->name('status-export');
     // Generate Password
     Route::post('/manage-users/{user}/generate-password', [AdminUserController::class, 'generatePassword'])->name('manage.users.generatePassword');
     Route::resource('cavs_osd', CavOsdController::class);
@@ -210,6 +264,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::resource('document_authentications', DocumentAuthenticationController::class);
     Route::get('condobpobs/all', [CondobpobController::class, 'data'])->name('condobpobs.all');
     Route::resource('condobpobs', CondobpobController::class);
+    Route::resource('documents', \App\Http\Controllers\DocumentController::class);
+
 });
 
 Route::prefix('records')->name('records.')->middleware(['auth', 'role:Records'])->group(function () {
@@ -271,7 +327,6 @@ Route::prefix('supervisor')->name('supervisor.')->middleware(['auth', 'role:Supe
     Route::get('/documents/getDocuments', [DocumentController::class, 'getDocuments'])->name('documents.getDocuments');
     Route::resource('documents', \App\Http\Controllers\DocumentController::class);
     Route::post('/documents/{id}/release', [DocumentController::class, 'release'])->name('documents.release');
-
     // Password Change Routes
     Route::get('/password/change', [RecordsDocumentController::class, 'showChangeForm'])->name('password.change.form');
     Route::post('/password/change', [RecordsDocumentController::class, 'change'])->name('password.change');
@@ -332,3 +387,4 @@ Route::get('/notifications/{id}', function ($id) {
     // Return a view that displays the notification details.
     return view('notifications.show', compact('notification'));
 })->middleware('auth')->name('notifications.show');
+Route::get('/admin/reports/export', [OutgoingController::class, 'export'])->name('admin.reports.export');

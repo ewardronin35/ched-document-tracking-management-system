@@ -20,6 +20,8 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         \App\Console\Commands\UpdateIncomingQuarter::class,
+        \App\Console\Commands\ClearLog::class,
+
     ];
     
     protected $middleware = [

@@ -10,6 +10,7 @@ use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Hei;      // Assuming there's an Hei model for HEI records
 use App\Models\Programs;  // Assuming there's a Program model for Program records
+use App\Models\Majors;    // Assuming there's a Major model for Major records
 use App\Imports\MultiSheetCavImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Log;
@@ -27,14 +28,16 @@ class CavController extends Controller
         // Fetch dropdown options from related models
         $heiOptions = Hei::pluck('HEIs')->toArray();
         $programOptions = Programs::pluck('name')->toArray();
+        $majorOptions = Majors::pluck('name')->toArray();
+
 
         // Determine prefix for view (for admin vs. records, etc.)
         $prefix = request()->routeIs('admin.*') ? 'admin' : 'records';
 
         if ($prefix === 'admin') {
-            return view('admin.cav.index', compact('heiOptions', 'programOptions'));
+            return view('admin.cav.index', compact('heiOptions', 'programOptions', 'majorOptions'));
         } elseif ($prefix === 'records') {
-            return view('records.cav.index', compact('heiOptions', 'programOptions'));
+            return view('records.cav.index', compact('heiOptions', 'programOptions', 'majorOptions'));
         } else {
             abort(403, 'Unauthorized access.');
         }
@@ -97,8 +100,8 @@ class CavController extends Controller
             'major' => 'nullable|string|max:255',
             'program_level' => 'nullable|string|max:255',
             'status_of_the_program' => 'nullable|string|max:255',
-            'date_started' => 'nullable|date',
-            'date_ended' => 'nullable|date',
+            'date_started' => 'nullable|string|max:255',
+            'date_ended' => 'nullable|string|max:255',
             'graduation_date' => 'nullable|date',
             'units_earned' => 'nullable|integer',            
             'special_order_no' => 'nullable|string|max:255',
@@ -199,8 +202,8 @@ class CavController extends Controller
             'major' => 'nullable|string|max:255',
             'program_level' => 'nullable|string|max:255',
             'status_of_the_program' => 'nullable|string|max:255',
-            'date_started' => 'nullable|date',
-            'date_ended' => 'nullable|date',
+            'date_started' => 'nullable|string|max:255',
+            'date_ended' => 'nullable|string|max:255',
             'graduation_date' => 'nullable|date',
             'units_earned' => 'nullable|integer',            
             'special_order_no' => 'nullable|string|max:255',        
@@ -262,6 +265,7 @@ class CavController extends Controller
     public function getLocalCavRecords() {
         // Adjust the condition according to how you determine "local" records.
         // Example: Filter where target_country is 'Philippines'.
+
         $localRecords = Cav::where('target_country', 'Philippines')->get();
         return response()->json($localRecords);
     }

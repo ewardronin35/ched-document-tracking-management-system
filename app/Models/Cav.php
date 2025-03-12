@@ -18,7 +18,8 @@ class Cav extends Model
         'region',
         'surname',
         'first_name',
-        'extension_name',
+        'extension_
+        name',
         'middle_name',
         'sex',
         'institution_code',

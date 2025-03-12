@@ -2,7 +2,7 @@
 
 namespace App\Imports;
 
-use App\Models\Cav;
+use App\Models\CavAbroad;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
@@ -12,9 +12,15 @@ class AbroadCavSheetImport implements ToModel, WithHeadingRow
      * Map each row of the abroad records sheet to a new Cav model.
      * If a date field is invalid, it returns null.
      */
+    
     public function model(array $row)
     {
-        return new Cav([
+        if (!array_filter($row)) {
+            return null;
+        }
+        
+
+        return new CavAbroad([
             'quarter'                         => $row['quarter'] ?? null,
             'cav_no'                          => $row['cav_no'] ?? null,
             'region'                          => $row['region'] ?? null,
@@ -33,8 +39,8 @@ class AbroadCavSheetImport implements ToModel, WithHeadingRow
             'major'                           => $row['major'] ?? null,
             'program_level'                   => $row['program_level'] ?? null,
             'status_of_the_program'           => $row['status_of_the_program'] ?? null,
-            'date_started'                    => $this->parseDate($row['date_started'] ?? null),
-            'date_ended'                      => $this->parseDate($row['date_ended'] ?? null),
+            'date_started'                    => $row['date_started'] ?? null,
+            'date_ended'                      => $row['date_ended'] ?? null,
             'graduation_date'                 => $this->parseDate($row['graduation_date'] ?? null),
             'units_earned'                    => $row['units_earned'] ?? null,
             'special_order_no'                => $row['special_order_no'] ?? null,

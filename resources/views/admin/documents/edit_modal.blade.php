@@ -31,14 +31,7 @@
     @endif
 
     <!-- Approval Status Section -->
-    <div class="mb-3" id="approval_status_container" style="{{ $document->approval_status === 'Pending' ? 'display: none;' : '' }}">
-        <label for="approval_status" class="form-label">Approval Status</label>
-        <select name="approval_status" id="approval_status" class="form-select" {{ $fullPower ? '' : 'disabled' }}>
-            <option value="">No Status</option>
-            <option value="Accepted" {{ $document->approval_status == 'Accepted' ? 'selected' : '' }}>Accepted</option>
-            <option value="Rejected" {{ $document->approval_status == 'Rejected' ? 'selected' : '' }}>Rejected</option>
-        </select>
-    </div>
+  
     <!-- Always include approval_status (hidden) to avoid Laravel validation errors -->
     <input type="hidden" name="approval_status" value="">
 

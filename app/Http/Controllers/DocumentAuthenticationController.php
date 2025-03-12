@@ -25,22 +25,24 @@ class DocumentAuthenticationController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'quarter'        => 'nullable|integer',
+            'quarter'        => 'nullable|string',
             'No'              => 'nullable|integer',  // e.g., O-
-            'document_no'    => 'nullable|string',  // Document number
-            'certification'  => 'nullable|string',  // Certification text, etc.
             'surname'        => 'nullable|string',
             'first_name'     => 'nullable|string',
             'extension_name' => 'nullable|string',
             'middle_name'    => 'nullable|string',
+            'sex'            => 'nullable|string',
+            'OR_number'      => 'nullable|string',
             'full_name_of_hei' => 'nullable|string',
             'program_name'   => 'nullable|string',
             'major'          => 'nullable|string',
-            'date_of_entry'  => 'nullable|date',
+            'date_started'  => 'nullable|date',
             'date_ended'     => 'nullable|date',
             'year_graduated' => 'nullable|date',
-            'so_no'          => 'nullable|string',
-            'or_no'          => 'nullable|string',
+            'units_earned'   => 'nullable|string',
+            'purpose'        => 'nullable|string',
+            'no_of_pcs'      => 'nullable|string',
+            'special_order_no' => 'nullable|string',
             'date_applied'   => 'nullable|date',
             'date_released'  => 'nullable|date',
             'remarks'        => 'nullable|string',

@@ -2,21 +2,56 @@
 
 namespace App\Imports;
 
-use App\Models\CavLocal;
+use App\Models\Cav;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
-class LocalCavSheetImport implements ToModel, WithHeadingRow
+class AllCavSheetImport implements ToModel, WithHeadingRow
 {
+    /**
+     * Transforms Excel date values (numeric or string) into a valid Y-m-d date string.
+     */
+    protected function transformDate($value)
+    {
+        // If it's an Excel numeric date, convert it.
+        if (is_numeric($value)) {
+            try {
+                return Date::excelToDateTimeObject($value)->format('Y-m-d');
+            } catch (\Exception $e) {
+                Log::error("Error transforming numeric date: {$value} - " . $e->getMessage());
+                return null;
+            }
+        }
+        
+        // If it's a string, fix common typos and try parsing it.
+        if (is_string($value)) {
+            // Fix a common typo: "OCOTBER" to "OCTOBER"
+            $value = str_ireplace('ocotber', 'october', $value);
+            
+            try {
+                return Carbon::parse($value)->format('Y-m-d');
+            } catch (\Exception $e) {
+                Log::error("Error parsing string date: {$value} - " . $e->getMessage());
+                return null;
+            }
+        }
+        
+        return $value;
+    }
+
     public function model(array $row)
     {
+        // Skip the row if it's entirely empty.
         if (!array_filter($row)) {
             return null;
         }
-        Log::info('LocalCavSheetImport processing row:', ['row' => $row]);
 
-        return new CavLocal([
+        Log::info('All CAVS processing row:', ['row' => $row]);
+
+        return new Cav([
             'quarter'                        => $row['quarter'] ?? null,
             'cav_no'                         => $row['cav_no'] ?? null,
             'region'                         => $row['region'] ?? null,
@@ -37,44 +72,16 @@ class LocalCavSheetImport implements ToModel, WithHeadingRow
             'status_of_the_program'          => $row['status_of_the_program'] ?? null,
             'date_started'                   => $row['date_started'] ?? null,
             'date_ended'                     => $row['date_ended'] ?? null,
-            'graduation_date'                => $this->parseDate($row['graduation_date'] ?? null),
+            'graduation_date'                => $this->transformDate($row['graduation_date'] ?? null),
             'units_earned'                   => $row['units_earned'] ?? null,
             'special_order_no'               => $row['special_order_no'] ?? null,
             'series'                         => $row['series'] ?? null,
-            'date_applied'                   => $this->parseDate($row['date_applied'] ?? null),
-            'date_released'                  => $this->parseDate($row['date_released'] ?? null),
+            'date_applied'                   => $this->transformDate($row['date_applied'] ?? null),
+            'date_released'                  => $this->transformDate($row['date_released'] ?? null),
             'airway_bill_no'                 => $row['airway_bill_no'] ?? null,
             'serial_number_of_security_paper'=> $row['serial_number_of_security_paper'] ?? null,
+            'purpose_of_cav'                 => $row['purpose_of_cav'] ?? null,
             'target_country'                 => $row['target_country'] ?? null,
         ]);
-    }
-    
-    /**
-     * Attempts to parse a given value into a date in "Y-m-d" format.
-     * If parsing fails (e.g., for values like "FIRST SEMESTER 2009-2010"), returns null.
-     *
-     * @param mixed $value
-     * @return string|null
-     */
-    protected function parseDate($value)
-    {
-        if (empty($value)) {
-            return null;
-        }
-        
-        try {
-            // If the value is numeric (as in Excel serial dates), convert it:
-            if (is_numeric($value)) {
-                // Excel dates start at 25569 in Unix time
-                $unixDate = ($value - 25569) * 86400;
-                return gmdate("Y-m-d", $unixDate);
-            }
-            
-            $date = new \DateTime($value);
-            return $date->format('Y-m-d');
-        } catch (\Exception $e) {
-            Log::warning("Could not parse date: " . $value);
-            return null;
-        }
     }
 }

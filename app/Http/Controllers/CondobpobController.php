@@ -36,7 +36,7 @@ class CondobpobController extends Controller
     {
         // Validate the request data.
         $validated = $request->validate([
-            'quarter'           => 'nullable|integer',
+            'quarter'           => 'nullable|string',
             'No'                => 'nullable|integer',
             'surname'           => 'nullable|string|max:255',
             'first_name'        => 'nullable|string|max:255',
@@ -86,7 +86,7 @@ class CondobpobController extends Controller
         $record = Condobpob::findOrFail($id);
 
         $validated = $request->validate([
-            'quarter'           => 'nullable|integer',
+            'quarter'           => 'nullable|string',
             'No'                => 'nullable|integer',
             'surname'           => 'nullable|string|max:255',
             'first_name'        => 'nullable|string|max:255',

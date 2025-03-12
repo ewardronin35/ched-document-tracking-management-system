@@ -3,280 +3,2517 @@
 @section('content')
 
 @push('styles')
-  <!-- Fonts and Handsontable CSS -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-  
-  <!-- FilePond CSS -->
-  <link href="https://unpkg.com/filepond/dist/filepond.min.css" rel="stylesheet">
-  <!-- (Optional) FilePond plugin for file type validation -->
-  <link href="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.min.css" rel="stylesheet">
+  <!-- Fonts, Handsontable, and FilePond CSS -->
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <!-- Font Awesome CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <!-- FilePond CSS -->
+    <link href="https://unpkg.com/filepond@^4/dist/filepond.css" rel="stylesheet" />
+    <link href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css" rel="stylesheet" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
   <style>
-    body, .handsontable .ht_master .htCore td, .handsontable .ht_master thead th {
-      font-family: 'Poppins', sans-serif !important;
-    }
-    .handsontable .ht_master .htCore td {
-      border: 1px solid #dee2e6;
-      padding: 0.75rem;
-    }
-    .handsontable .ht_master thead th {
-      background: #f8f9fa;
-      color: #495057;
-      border: 1px solid #dee2e6;
-      font-weight: 600;
-    }
-    .highlightedRow {
-      background-color: #ffff99 !important;
-    }
-    #handsontable-outgoings,
-    #handsontable-incomings,
-    #handsontable-travel-memo,
-    #handsontable-ono {
-      max-height: 750px;
-      overflow: auto;
-    }
-    .release-btn {
-      padding: 2px 5px;
-      font-size: 0.8rem;
-    }
-    .search-field {
-      width: 200px;
-    }
-    .released-row {
-      background-color: #d4edda !important;
-    }
-    .htQuarterLabel {
-      font-weight: bold;
-      background-color: #e9ecef;
-    }
-    /* Additional styling for the import tab */
-    .filepond--root {
-      margin-top: 1rem;
-    }
-    .gray-row {
-  background-color: #e0e0e0 !important;  /* light gray for completely empty rows */
+ /* Modern Excel Theme Variables */
+:root {
+  /* Core Excel Colors - Updated for Microsoft 365 look */
+  --excel-primary: #0078d4;        /* Primary accent color */
+  --excel-background: #ffffff;      /* Clean white background */
+  --excel-header-bg: #f3f2f1;       /* Soft gray header background */
+  --excel-border-color: #e1e1e1;    /* Lighter, more subtle borders */
+  --excel-text-primary: #323130;    /* Dark gray text for readability */
+  --excel-hover-bg: #f5f5f5;        /* Subtle hover state */
+
+  --ched-primary: #234584;        /* Dark blue for header */
+  --ched-secondary: #f8f9fa;      /* Light background */
+  --ched-accent: #0078d4;         /* Accent blue for buttons/links */
+  --ched-text: #ffffff;           /* White text for dark backgrounds */
+  --ched-border: #d0d0d0;         /* Border color */
+  
+  /* Excel Ribbon - Updated with Office 365 palette */
+  --excel-ribbon-bg: #f3f2f1;
+  --excel-ribbon-border: #e1dfdd;
+  --excel-ribbon-active: #0078d4;
+  --excel-ribbon-text: #323130;
+  --excel-ribbon-text-active: #ffffff;
+  
+  /* Excel Toolbar */
+  --excel-toolbar-bg: #f3f2f1;
+  --excel-toolbar-border: #e1dfdd;
+  --excel-toolbar-button: #0078d4;
+  --excel-toolbar-button-hover: #106ebe;
+  
+  /* Status Colors */
+  --status-green: #e6f5d0;
+  --status-yellow: #fff8d0;
+  --status-red: #fbdfdf;
+  --status-gray: #f0f0f0;
+  
+  /* Status Text Colors */
+  --status-green-text: #107c10;
+  --status-yellow-text: #986f0b;
+  --status-red-text: #a80000;
+  
+  /* Font - Updated to match Excel more closely */
+  --excel-font: 'Segoe UI', 'Calibri', sans-serif;
+  --excel-font-size: 12px;
+
+  /* Shadows */
+  --excel-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --excel-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
-.green-row {
-  background-color: #ccffcc !important;  /* green for within first day */
-}
-.yellow-row {
-  background-color: #ffffcc !important;  /* yellow for 1–6 days */
-}
-.red-row {
-  background-color: #ffcccc !important;  /* red for 7+ days */
+.excel-grid {
+  border: 1px solid var(--excel-border-color);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  border-radius: 4px;
 }
 
-.custom-tabs .nav-link {
-  border-radius: 20px;
-  margin-right: 0.5rem;
-  padding: 0.5rem 1rem;
+.excel-grid-header {
+  background: linear-gradient(to bottom, #ffffff, var(--excel-header-bg));
+  border-bottom: 1px solid var(--excel-border-color);
+  font-weight: 600;
+}
+
+.excel-grid-row:hover {
+  background-color: var(--excel-hover-bg);
+  transition: background-color 0.2s ease;
+}
+body {
+  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: var(--excel-text-primary);
+  line-height: 1.5;
+}
+/* Excel Workbook Container */
+.excel-workbook {
+  background-color: var(--excel-bg);
+  border-radius: 2px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  overflow: hidden;
+  border: 1px solid #d0d0d0;
+  display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+}
+.excel-ribbon, .excel-subtabs {
+    flex-shrink: 0;
+}
+
+/* Toolbar - Fixed height */
+.excel-toolbar {
+    flex-shrink: 0;
+}
+
+/* Excel Ribbon (Tabs) - Updated to match Office 365 */
+.excel-ribbon {
+  display: flex;
+  background-color: var(--excel-ribbon-bg);
+  border-bottom: 1px solid var(--excel-ribbon-border);
+  padding: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  height: 36px;
+}
+
+.excel-ribbon::-webkit-scrollbar {
+  height: 4px;
+}
+
+.excel-ribbon::-webkit-scrollbar-thumb {
+  background-color: #c1c1c1;
+  border-radius: 2px;
+}
+
+.excel-ribbon .nav-item {
+  margin: 0;
+}
+
+.excel-ribbon .nav-link {
+  color: var(--excel-ribbon-text);
+  padding: 8px 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  position: relative;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  height: 36px;
+}
+
+.excel-ribbon .nav-link i {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.excel-ribbon .nav-link.active {
+  color: var(--excel-ribbon-active);
+  background-color: var(--excel-bg);
+  border-bottom: 2px solid var(--excel-ribbon-active);
+}
+
+.excel-ribbon .nav-link:hover:not(.active) {
+  background-color: var(--excel-header-hover);
+}
+
+/* Excel Subtabs */
+.excel-subtabs {
+  background-color: var(--excel-toolbar-bg);
+  border-bottom: 1px solid var(--excel-toolbar-border);
+  padding: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  margin-bottom: 0;
+  height: 32px;
+}
+
+.excel-subtabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.excel-subtabs::-webkit-scrollbar-thumb {
+  background-color: #c1c1c1;
+  border-radius: 2px;
+}
+
+.excel-subtabs .nav-link {
+  color: #505050;
+  padding: 6px 12px;
+  font-size: 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  transition: all 0.2s ease;
+  height: 32px;
+}
+
+.excel-subtabs .nav-link.active {
+  color: var(--excel-ribbon-active);
+  border-bottom: 2px solid var(--excel-ribbon-active);
+  background-color: transparent;
+  font-weight: 500;
+}
+
+.excel-subtabs .nav-link:hover:not(.active) {
+  background-color: var(--excel-header-hover);
+}
+
+.excel-subtabs .nav-link i {
+  margin-right: 4px;
+  font-size: 12px;
+}
+
+/* Excel Toolbar - Updated to look more like Excel's toolbar */
+.excel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--excel-toolbar-bg);
+  border-bottom: 1px solid var(--excel-toolbar-border);
+  padding: 6px 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  min-height: 40px;
+}
+
+.toolbar-title {
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-title h6 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #323130;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.toolbar-title i {
+  color: #0078d4;
+  margin-right: 8px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Search Box - Improved to match Excel's search box */
+.excel-search-wrapper {
+  position: relative;
+  flex-grow: 1;
+  max-width: 320px;
+  border: 1px solid var(--excel-header-border);
+  border-radius: 2px;
+  background-color: white;
+  transition: all 0.2s ease;
+}
+
+.excel-search-wrapper:focus-within {
+  border-color: var(--excel-ribbon-active);
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+}
+
+.excel-search-wrapper i {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 14px;
+}
+
+.excel-search {
+  padding: 6px 8px 6px 28px;
+  border: none;
+  font-size: 12px;
+  width: 100%;
+  transition: all 0.2s ease;
+  background-color: transparent;
+}
+
+.excel-search:focus {
+  outline: none;
+}
+
+/* Filter Dropdown - Updated to match Excel's filter dropdowns */
+.excel-filter {
+  padding: 6px 28px 6px 8px;
+  border: 1px solid var(--excel-header-border);
+  border-radius: 2px;
+  font-size: 12px;
+  background-color: white;
+  min-width: 140px;
+  transition: all 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.excel-filter:focus {
+  border-color: var(--excel-ribbon-active);
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+  outline: none;
+}
+
+/* Excel Table Container */
+.excel-table-container {
+  position: relative;
+  height: 700px;
+  max-height: 700px;
+  overflow: auto;
+  background-color: #fff;
+  border-radius: 0 0 2px 2px;
+  border-top: none;
+  box-shadow: var(--excel-shadow-sm);
+  flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: auto;
+    position: relative;
+}
+
+/* HandsOnTable Styling - Enhanced to look more like Excel */
+.handsontable .ht_master .htCore {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.handsontable .ht_master .htCore td {
+  border-right: 1px solid var(--excel-cell-border);
+  border-bottom: 1px solid var(--excel-cell-border);
+  padding: 1px 4px;
+  font-family: var(--excel-font) !important;
+  font-size: var(--excel-font-size);
+  height: 21px; /* Excel's default row height */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-clip: padding-box;
+}
+
+.handsontable .ht_master .htCore tr th {
+  background-color: var(--excel-header-bg);
+  background-image: linear-gradient(to bottom, #f8f8f8, #f0f0f0);
+  border-right: 1px solid var(--excel-header-border);
+  border-bottom: 1px solid var(--excel-header-border);
+  padding: 4px 6px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #444;
+  position: relative;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: none;
+  height: 24px;
+}
+
+.handsontable .ht_master .htCore th:hover {
+  background-image: linear-gradient(to bottom, #f0f0f0, #e8e8e8);
+}
+
+/* Excel-like column headers with filter icons */
+.handsontable .ht_master .htCore th .columnSorting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.handsontable .ht_master .htCore th .columnSorting::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3'%3E%3C/polygon%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.handsontable .ht_master .htCore th .columnSorting.ascending::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230078d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3'%3E%3C/polygon%3E%3C/svg%3E");
+  opacity: 1;
+}
+
+.handsontable .ht_master .htCore th .columnSorting.descending::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230078d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3'%3E%3C/polygon%3E%3C/svg%3E");
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+/* Row striping - Very subtle like in Excel */
+.handsontable .ht_master .htCore tbody tr:nth-child(even) {
+  background-color: rgba(245, 245, 245, 0.2);
+}
+
+/* Hover effect on rows */
+.handsontable .ht_master .htCore tbody tr:hover {
+  background-color: var(--excel-hover-bg);
+}
+
+/* Selected cells - Updated to match Excel's selection style */
+.handsontable .ht_master .htCore td.current {
+  background-color: var(--excel-selected-bg) !important;
+  border: 1px solid var(--excel-selected-border) !important;
+}
+
+/* Selection handle (the little blue square in the corner) */
+.handsontable .ht_master .htCore td.current .selection-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  background-color: var(--excel-selected-handle);
+  border: 1px solid white;
+}
+
+/* Selection area */
+.handsontable .area.fill {
+  background-color: rgba(0, 120, 212, 0.1);
+  border: 1px dashed rgba(0, 120, 212, 0.5);
+}
+
+/* Status Row Colors */
+.green-row, .released-row {
+  background-color: var(--status-green) !important;
+}
+
+.yellow-row {
+  background-color: var(--status-yellow) !important;
+}
+
+.red-row {
+  background-color: var(--status-red) !important;
+}
+
+.gray-row {
+  background-color: var(--status-gray) !important;
+}
+
+/* Highlighted Row */
+.highlightedRow {
+  background-color: var(--excel-selected-bg) !important;
+  font-weight: 500;
+}
+
+/* Quarter Label Cell */
+.htQuarterLabel {
+  font-weight: 600;
+  background-color: rgba(0, 120, 212, 0.08);
+  color: #0078d4;
+}
+
+/* Excel Action Buttons - Styled more like Excel's buttons */
+.excel-button {
+  background-color: var(--excel-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.excel-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px); /* Adjust based on your header/navbar height */
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+
+.excel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: var(--excel-header-bg);
+  border-bottom: 1px solid var(--excel-border-color);
+}
+.excel-button:hover {
   background-color: #f0f0f0;
+}
+
+.excel-button:active {
+  background-color: #e0e0e0;
+}
+
+.excel-button i {
+  margin-right: 4px;
+  font-size: 12px;
+}
+
+.excel-button-primary {
+  background-color: var(--excel-toolbar-button);
+  border-color: var(--excel-toolbar-button);
+  color: white;
+}
+
+.excel-button-primary:hover {
+  background-color: var(--excel-toolbar-button-hover);
+  border-color: var(--excel-toolbar-button-hover);
+}
+
+.excel-button-primary:active {
+  background-color: #005a9e;
+  border-color: #005a9e;
+}
+
+.release-btn {
+  padding: 2px 6px;
+  font-size: 11px;
+  background-color: var(--excel-toolbar-button);
+  border-color: var(--excel-toolbar-button);
+  color: white;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.release-btn:hover {
+  background-color: var(--excel-toolbar-button-hover);
+  border-color: var(--excel-toolbar-button-hover);
+}
+
+/* Excel Card Design */
+.excel-card {
+  background-color: #fff;
+  border-radius: 2px;
+  box-shadow: var(--excel-shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid var(--excel-header-border);
+}
+
+.excel-card-header {
+  background-color: var(--excel-header-bg);
+  background-image: linear-gradient(to bottom, #f8f8f8, #f0f0f0);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--excel-header-border);
+}
+
+.excel-card-header h6 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 13px;
   color: #333;
 }
-.custom-tabs .nav-link.active {
-  background-color: #007bff;
-  color: #fff;
+
+.excel-card-body {
+  padding: 14px;
 }
-.custom-tabs .nav-link i {
-  margin-right: 0.3rem;
+
+/* FilePond Styling */
+.filepond--root {
+  font-family: var(--excel-font);
+  margin: 16px 0;
+}
+
+.filepond--panel-root {
+  border-radius: 2px;
+  background-color: #f9f9f9;
+  border: 1px dashed #ccc;
+}
+
+.filepond--drop-label {
+  color: #555;
+}
+
+/* Excel Column Header with Sort Indicators */
+.excel-column-header {
+  position: relative;
+  padding-right: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+}
+
+.excel-column-header-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.excel-column-header-icons {
+  display: flex;
+  align-items: center;
+}
+
+.excel-column-header-sort {
+  width: 8px;
+  height: 12px;
+  position: relative;
+  margin-right: 4px;
+}
+
+.excel-column-header-sort::before,
+.excel-column-header-sort::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+}
+
+.excel-column-header-sort::before {
+  top: 0;
+  border-bottom: 4px solid #bbb;
+}
+
+.excel-column-header-sort::after {
+  bottom: 0;
+  border-top: 4px solid #bbb;
+}
+
+.excel-column-header-sort.sort-asc::before {
+  border-bottom-color: #0078d4;
+}
+
+.excel-column-header-sort.sort-desc::after {
+  border-top-color: #0078d4;
+}
+
+.excel-column-header-filter {
+  width: 12px;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3'%3E%3C/polygon%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.7;
+}
+
+.excel-column-header-filter.filtered {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230078d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolygon points='22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3'%3E%3C/polygon%3E%3C/svg%3E");
+  opacity: 1;
+}
+
+/* Excel Scrollbars - Updated to look more like Excel's scrollbars */
+.excel-table-container::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.excel-table-container::-webkit-scrollbar-track {
+  background: #f7f7f7;
+  border-left: 1px solid #e0e0e0;
+  border-top: 1px solid #e0e0e0;
+}
+
+.excel-table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border: 2px solid #f7f7f7;
+  border-radius: 5px;
+}
+
+.excel-table-container::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+.excel-table-container::-webkit-scrollbar-corner {
+  background: #f7f7f7;
+  border-left: 1px solid #e0e0e0;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Excel Status Bar - New component to match Excel's status bar */
+.excel-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--excel-toolbar-bg);
+  border-top: 1px solid var(--excel-toolbar-border);
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #666;
+  height: 22px;
+  flex-shrink: 0;
+
+}
+
+.excel-status-bar-left {
+  display: flex;
+  align-items: center;
+}
+
+.excel-status-bar-right {
+  display: flex;
+  align-items: center;
+}
+
+.excel-status-bar-item {
+  padding: 0 8px;
+  border-right: 1px solid #e0e0e0;
+}
+
+.excel-status-bar-item:last-child {
+  border-right: none;
+}
+
+.excel-zoom-controls {
+  display: flex;
+  align-items: center;
+}
+
+.excel-zoom-btn {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  font-size: 11px;
+}
+
+.excel-zoom-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.excel-zoom-value {
+  margin: 0 4px;
+}
+
+/* Excel Tooltip */
+.excel-tooltip {
+  position: absolute;
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #d0d0d0;
+  border-radius: 2px;
+  padding: 4px 8px;
+  font-size: 11px;
+  z-index: 9999;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+  max-width: 300px;
+  white-space: normal;
+}
+
+/* Excel Status Indicators - Updated to look more like Excel's conditional formatting */
+.excel-status {
+  display: inline-block;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.excel-status-green {
+  background-color: var(--status-green);
+  color: var(--status-green-text);
+}
+
+.excel-status-yellow {
+  background-color: var(--status-yellow);
+  color: var(--status-yellow-text);
+}
+
+.excel-status-red {
+  background-color: var(--status-red);
+  color: var(--status-red-text);
+}
+
+/* Excel Sheet Tabs - New component to simulate Excel's sheet tabs */
+.excel-sheet-tabs {
+  display: flex;
+  align-items: center;
+  background-color: #e9e9e9;
+  border-top: 1px solid #d0d0d0;
+  height: 24px;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.excel-sheet-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.excel-sheet-tab {
+  display: flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 12px;
+  background-color: #e3e3e3;
+  border-right: 1px solid #d0d0d0;
+  font-size: 11px;
+  color: #333;
+  cursor: pointer;
+  min-width: 80px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.excel-sheet-tab.active {
+  background-color: #fff;
+  font-weight: 600;
+  border-bottom: 2px solid #0078d4;
+}
+
+.excel-sheet-tab:hover:not(.active) {
+  background-color: #d7d7d7;
+}
+
+.excel-sheet-tab i {
+  margin-right: 4px;
+  font-size: 11px;
+  color: #555;
+}
+
+/* Excel Formula Bar - New component to simulate Excel's formula bar */
+.excel-formula-bar {
+  display: flex;
+  align-items: center;
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #d0d0d0;
+  height: 25px;
+  padding: 0 8px;
+}
+
+.excel-name-box {
+  width: 80px;
+  height: 20px;
+  border: 1px solid #c1c1c1;
+  font-size: 11px;
+  padding: 0 4px;
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+  background-color: white;
+}
+
+.excel-formula-input {
+  flex-grow: 1;
+  height: 20px;
+  border: 1px solid #c1c1c1;
+  font-size: 11px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  background-color: white;
+}
+
+.excel-formula-label {
+  margin-right: 4px;
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Loading indicator */
+.excel-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  flex-direction: column;
+}
+
+.excel-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #0078d4;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 8px;
+}
+
+.excel-loading-text {
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .excel-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .toolbar-actions {
+    width: 100%;
+    margin-top: 8px;
+  }
+  
+  .excel-search-wrapper {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .excel-filter {
+    width: 100%;
+  }
+  
+  .excel-ribbon .nav-link {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  
+  .excel-ribbon .nav-link i {
+    margin-right: 4px;
+  }
+}
+
+/* Performance optimization */
+.handsontable {
+  will-change: transform;
+}
+
+.excel-table-container {
+  contain: content;
+}
+/* Add to your existing style section */
+.search-highlight {
+  background-color: rgba(255, 240, 105, 0.5) !important;
+  font-weight: bold;
+}
+
+/* Add a search results counter near your search inputs */
+.search-counter {
+  font-size: 12px;
+  color: #555;
+  margin-left: 8px;
+}
+/* Reports Section Styles */
+
+/* Report Card */
+.excel-card {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.excel-card:hover {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Filter Form */
+#report-filter-form .form-label {
+  font-weight: 600;
+  color: #444;
+  font-size: 0.9rem;
+}
+
+#report-filter-form .form-select,
+#report-filter-form .form-control {
+  border-color: #d0d0d0;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+#report-filter-form .form-select:focus,
+#report-filter-form .form-control:focus {
+  border-color: var(--excel-ribbon-active);
+  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+}
+
+/* Report Buttons */
+#generate-report-btn,
+#export-report-btn {
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+#generate-report-btn {
+  background-color: var(--excel-toolbar-button);
+  border-color: var(--excel-toolbar-button);
+}
+
+#generate-report-btn:hover {
+  background-color: var(--excel-toolbar-button-hover);
+  border-color: var(--excel-toolbar-button-hover);
+}
+
+#export-report-btn {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+#export-report-btn:hover {
+  background-color: #5a6268;
+  border-color: #545b62;
+}
+
+/* Chart Container */
+#quarterly-chart-container {
+  background-color: #fff;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+/* Report Wrapper */
+.report-wrapper {
+  padding: 15px;
+}
+
+/* Chart Tabs */
+.report-wrapper .nav-tabs {
+  border-bottom: 1px solid #dee2e6;
 }
 
   </style>
 @endpush
-<div class="container-fluid">
-    <!-- Main Tabs: Incomings / Outgoings / Imports / Reports -->
-    <ul class="nav nav-tabs custom-tabs" id="documentTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <a class="nav-link active" id="incomings-tab" data-bs-toggle="tab" href="#incomings" role="tab" aria-controls="incomings" aria-selected="true">
-        <i class="fas fa-inbox"></i> Incomings
-      </a>
-    </li>
-    <li class="nav-item" role="presentation">
-      <a class="nav-link" id="outgoings-tab" data-bs-toggle="tab" href="#outgoings" role="tab" aria-controls="outgoings" aria-selected="false">
-        <i class="fas fa-paper-plane"></i> Outgoings
-      </a>
-    </li>
-    <li class="nav-item" role="presentation">
-      <a class="nav-link" id="imports-tab" data-bs-toggle="tab" href="#imports" role="tab" aria-controls="imports" aria-selected="false">
-        <i class="fas fa-upload"></i> Imports
-      </a>
-    </li>
-    <li class="nav-item" role="presentation">
-      <a class="nav-link" id="reports-tab" data-bs-toggle="tab" href="#reports" role="tab" aria-controls="reports" aria-selected="false">
-        <i class="fas fa-chart-line"></i> Reports
-      </a>
-    </li>
-  </ul>
 
+@section('content')
+<div class="excel-container">
+  <div class="excel-workbook">
+    <!-- Main Excel Ribbon Tabs -->
+  
+    <ul class="nav nav-tabs excel-ribbon" id="documentTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link active" id="incomings-tab" data-bs-toggle="tab" href="#incomings" role="tab" aria-controls="incomings" aria-selected="true">
+          <i class="fas fa-inbox"></i> Incomings
+        </a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link" id="outgoings-tab" data-bs-toggle="tab" href="#outgoings" role="tab" aria-controls="outgoings" aria-selected="false">
+          <i class="fas fa-paper-plane"></i> Outgoings
+        </a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link" id="imports-tab" data-bs-toggle="tab" href="#imports" role="tab" aria-controls="imports" aria-selected="false">
+          <i class="fas fa-upload"></i> Imports
+        </a>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link" id="reports-tab" data-bs-toggle="tab" href="#reports" role="tab" aria-controls="reports" aria-selected="false">
+          <i class="fas fa-chart-line"></i> Reports
+        </a>
+      </li>
+    </ul>
 
     <div class="tab-content" id="documentTabsContent">
-        <!-- Incomings Tab (unchanged) -->
-        <div class="tab-pane fade show active pt-3" id="incomings" role="tabpanel" aria-labelledby="incomings-tab">
-            <div class="card mb-4">
-              
-                <div id="handsontable-incomings" wire:ignore style="overflow-x:auto;"></div>
+      <!-- Incomings Tab -->
+      <div class="tab-pane fade show active" id="incomings" role="tabpanel" aria-labelledby="incomings-tab">
+        
+      <div class="excel-toolbar">
+        <div class="toolbar-title">
+          <i class="fas fa-inbox"></i>
+          <h6 class="mb-0">Incoming Documents</h6>
+        </div>
+        <div class="toolbar-actions">
+          <div class="excel-search-wrapper">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-incomings" class="excel-search" placeholder="Search incomings...">
+          </div>
+          <select class="excel-filter" id="filter-incomings-status">
+            <option value="all">All Status</option>
+            <option value="released">Released</option>
+            <option value="pending">Pending</option>
+          </select>
+          <button class="excel-button">
+            <i class="fas fa-sort"></i> Sort
+          </button>
+          <button class="excel-button" id="advanced-filter-btn">
+          <i class="fas fa-filter"></i> Advanced Filter
+          </button>
+        </div>
+      </div>
+      
+      <div class="excel-table-container">
+        <div id="handsontable-incomings" wire:ignore></div>
+      </div>
+      
+      <!-- Excel Status Bar -->
+      <div class="excel-status-bar">
+        <div class="excel-status-bar-left">
+          <div class="excel-status-bar-item">
+            <span id="selection-count">0</span> of <span id="total-rows">0</span> records selected
+          </div>
+          <div class="excel-status-bar-item">
+            <span id="filtered-count">0</span> records filtered
+          </div>
+        </div>
+        <div class="excel-status-bar-right">
+          <div class="excel-status-bar-item excel-zoom-controls">
+            <button class="excel-zoom-btn" id="zoom-out"><i class="fas fa-minus"></i></button>
+            <span class="excel-zoom-value">100%</span>
+            <button class="excel-zoom-btn" id="zoom-in"><i class="fas fa-plus"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- Outgoings Tab -->
+      <div class="tab-pane fade" id="outgoings" role="tabpanel" aria-labelledby="outgoings-tab">
+        <!-- Sub-tabs as navigation tabs with Excel styling -->
+        <ul class="nav nav-tabs excel-subtabs" id="outgoingsSubTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <a class="nav-link active" id="all-outgoings-tab" data-bs-toggle="pill" href="#all-outgoings" role="tab" aria-controls="all-outgoings" aria-selected="true">
+              <i class="fas fa-list"></i> All Outgoings
+            </a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="travel-memo-tab" data-bs-toggle="pill" href="#travel-memo" role="tab" aria-controls="travel-memo" aria-selected="false">
+              <i class="fas fa-plane"></i> Travel Memo
+            </a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="ono-tab" data-bs-toggle="pill" href="#ono" role="tab" aria-controls="ono" aria-selected="false">
+              <i class="fas fa-file-alt"></i> O No. DATE OF RELEASED
+            </a>
+          </li>
+        </ul>
+        
+        <div class="tab-content" id="outgoingsSubTabsContent">
+          <!-- All Outgoings Sub-tab -->
+          <div class="tab-pane fade show active" id="all-outgoings" role="tabpanel" aria-labelledby="all-outgoings-tab">
+            <div class="excel-toolbar">
+              <div class="toolbar-title">
+                <i class="fas fa-paper-plane"></i>
+                <h6 class="mb-0">Outgoing Documents</h6>
+              </div>
+              <div class="toolbar-actions">
+                <div class="excel-search-wrapper">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="search-outgoings" class="excel-search" placeholder="Search outgoings...">
+                </div>
+                <select class="excel-filter" id="filter-outgoings-category">
+                  <option value="all">All Categories</option>
+                  <option value="TRAVEL ORDER">Travel Order</option>
+                  <option value="ONO">O No.</option>
+                  <option value="RMO">RMO</option>
+                  <option value="MEMO-ORD">MEMO-ORD</option>
+                </select>
+                <button class="excel-button excel-button-primary">
+                  <i class="fas fa-sort"></i> Sort
+                </button>
+              </div>
             </div>
+            <div class="excel-table-container" id="handsontable-outgoings" wire:ignore></div>
+          </div>
+          
+          <!-- Travel Memo Sub-tab -->
+          <div class="tab-pane fade" id="travel-memo" role="tabpanel" aria-labelledby="travel-memo-tab">
+            <div class="excel-toolbar">
+              <div class="toolbar-title">
+                <i class="fas fa-plane"></i>
+                <h6 class="mb-0">Travel Memo</h6>
+              </div>
+              <div class="toolbar-actions">
+                <div class="excel-search-wrapper">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="search-travel-memo" class="excel-search" placeholder="Search travel memo...">
+                </div>
+                <button class="excel-button">
+                  <i class="fas fa-print"></i> Print
+                </button>
+              </div>
+            </div>
+            <div class="excel-table-container" id="handsontable-travel-memo" wire:ignore></div>
+          </div>
+          
+          <!-- O No. Sub-tab -->
+          <div class="tab-pane fade" id="ono" role="tabpanel" aria-labelledby="ono-tab">
+            <div class="excel-toolbar">
+              <div class="toolbar-title">
+                <i class="fas fa-file-alt"></i>
+                <h6 class="mb-0">O No. DATE OF RELEASED</h6>
+              </div>
+              <div class="toolbar-actions">
+                <div class="excel-search-wrapper">
+                  <i class="fas fa-search"></i>
+                  <input type="text" id="search-ono" class="excel-search" placeholder="Search O No....">
+                </div>
+                <button class="excel-button">
+                  <i class="fas fa-download"></i> Export
+                </button>
+              </div>
+            </div>
+            <div class="excel-table-container" id="handsontable-ono" wire:ignore></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Imports Tab -->
+      <div class="tab-pane fade" id="imports" role="tabpanel" aria-labelledby="imports-tab">
+        <ul class="nav nav-tabs excel-subtabs" id="importsSubTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <a class="nav-link active" id="incoming-import-tab" data-bs-toggle="tab" href="#incoming-import" role="tab" aria-controls="incoming-import" aria-selected="true">
+              <i class="fas fa-file-import"></i> Incoming Import
+            </a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" id="outgoing-import-tab" data-bs-toggle="tab" href="#outgoing-import" role="tab" aria-controls="outgoing-import" aria-selected="false">
+              <i class="fas fa-file-export"></i> Outgoing Import
+            </a>
+          </li>
+        </ul>
+        
+        <div class="tab-content" id="importsSubTabsContent">
+          <!-- Incoming Import Subtab -->
+          <div class="tab-pane fade show active p-3" id="incoming-import" role="tabpanel" aria-labelledby="incoming-import-tab">
+            <div class="excel-card">
+              <div class="excel-card-header">
+                <h6><i class="fas fa-file-import me-2"></i> Import Incoming Excel Files</h6>
+              </div>
+              <div class="excel-card-body">
+                <p class="text-muted small mb-3">Supported formats: CSV, XLS, XLSX</p>
+                <input type="file" class="filepond" name="incoming_filepond" id="incoming-filepond" accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Outgoing Import Subtab -->
+          <div class="tab-pane fade p-3" id="outgoing-import" role="tabpanel" aria-labelledby="outgoing-import-tab">
+            <div class="excel-card">
+              <div class="excel-card-header">
+                <h6><i class="fas fa-file-export me-2"></i> Import Outgoing Excel Files</h6>
+              </div>
+              <div class="excel-card-body">
+                <p class="text-muted small mb-3">Supported formats: CSV, XLS, XLSX</p>
+                <input type="file" class="filepond" name="outgoing_filepond" id="outgoing-filepond" accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+<!-- Reports Tab -->
+<!-- Replace the Reports Tab HTML with this -->
+<div class="tab-pane fade" id="reports" role="tabpanel" aria-labelledby="reports-tab">
+  <div class="excel-toolbar">
+    <div class="toolbar-title">
+      <i class="fas fa-chart-line"></i>
+      <h6 class="mb-0">Outgoing and Incoming Reports</h6>
+    </div>
+  </div>
+  
+  <div class="excel-card mb-4">
+    <div class="excel-card-header">
+      <h6><i class="fas fa-filter me-2"></i> Report Filters</h6>
+    </div>
+    <div class="excel-card-body">
+      <form id="report-filter-form" class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Quarter</label>
+          <select class="form-select" id="report-quarter">
+            <option value="all">All Quarters</option>
+            <option value="1">Q1 (Jan-Mar)</option>
+            <option value="2">Q2 (Apr-Jun)</option>
+            <option value="3">Q3 (Jul-Sep)</option>
+            <option value="4">Q4 (Oct-Dec)</option>
+          </select>
+        </div>
+        
+        <div class="col-md-6">
+          <label class="form-label">Document Type</label>
+          <select class="form-select" id="report-doc-type">
+            <option value="all">All Documents</option>
+            <option value="incoming">Incoming Only</option>
+            <option value="outgoing">Outgoing Only</option>
+          </select>
+        </div>
+        
+        <div class="col-md-6">
+          <label class="form-label">Chart View</label>
+          <div class="btn-group" role="group">
+            <input type="radio" class="btn-check" name="chart-view" id="chart-view-quarter" value="quarter" checked>
+            <label class="btn btn-outline-primary" for="chart-view-quarter">Quarterly</label>
+            
+            <input type="radio" class="btn-check" name="chart-view" id="chart-view-month" value="month">
+            <label class="btn btn-outline-primary" for="chart-view-month">Monthly</label>
+          </div>
         </div>
 
-   <!-- Outgoings Tab -->
-<div class="tab-pane fade pt-3" id="outgoings" role="tabpanel" aria-labelledby="outgoings-tab">
-  <!-- Sub-tabs as button-style pills with icons -->
-  <ul class="nav nav-pills custom-tabs" id="outgoingsSubTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <a class="nav-link active" id="all-outgoings-tab" data-bs-toggle="pill" href="#all-outgoings" role="tab" aria-controls="all-outgoings" aria-selected="true">
-        Outgoings
-      </a>
-    </li>
-    <li class="nav-item" role="presentation">
-      <a class="nav-link" id="travel-memo-tab" data-bs-toggle="pill" href="#travel-memo" role="tab" aria-controls="travel-memo" aria-selected="false">
-        <i class="fas fa-plane"></i> Travel Memo
-      </a>
-    </li>
-    <li class="nav-item" role="presentation">
-      <a class="nav-link" id="ono-tab" data-bs-toggle="pill" href="#ono" role="tab" aria-controls="ono" aria-selected="false">
-        <i class="fas fa-file-alt"></i> O No. DATE OF RELEASED
-      </a>
-    </li>
-  </ul>
+
+        <div class="col-md-6">
+          <label class="form-label">Export Format</label>
+          <div class="d-flex gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="export-format" id="export-pdf" value="pdf" checked>
+              <label class="form-check-label" for="export-pdf">PDF</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="export-format" id="export-excel" value="excel">
+              <label class="form-check-label" for="export-excel">Excel</label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-12 mt-4">
+  <button type="button" id="generate-report-btn" class="btn btn-primary">
+    <i class="fas fa-sync me-2"></i>Generate Report
+  </button>
+  <button type="button" id="export-report-btn" class="btn btn-secondary ms-2">
+    <i class="fas fa-download me-2"></i>Export Report
+  </button>
+</div>
+      </form>
+    </div>
+  </div>
   
-  <div class="tab-content mt-3" id="outgoingsSubTabsContent">
-    <!-- All Outgoings Sub-tab -->
-    <div class="tab-pane fade show active" id="all-outgoings" role="tabpanel" aria-labelledby="all-outgoings-tab">
-      <div class="card mb-4">
-       
-        <div id="handsontable-outgoings" wire:ignore style="overflow-x:auto;"></div>
+  
+    <div class="excel-card">
+    <div class="excel-card-header d-flex justify-content-between align-items-center">
+      <h6><i class="fas fa-chart-pie me-2"></i> Document Distribution</h6>
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-primary active" id="chart-type-bar">
+          <i class="fas fa-chart-bar"></i>
+        </button>
+        <button type="button" class="btn btn-outline-primary" id="chart-type-pie">
+          <i class="fas fa-chart-pie"></i>
+        </button>
+        <button type="button" class="btn btn-outline-primary" id="chart-type-line">
+          <i class="fas fa-chart-line"></i>
+        </button>
       </div>
     </div>
-    <!-- Travel Memo Sub-tab -->
-    <div class="tab-pane fade" id="travel-memo" role="tabpanel" aria-labelledby="travel-memo-tab">
-      <div class="card mb-4">
-        <div class="card-header d-flex align-items-center">
-          <i class="fas fa-plane me-2"></i>
-          <span>Travel Memo</span>
-          <input type="text" id="search-travel-memo" class="form-control ms-3 search-field" placeholder="Search Travel Memo">
+    <div class="excel-card-body">
+      <div id="quarterly-chart-container" style="height: 400px; width: 100%;">
+        <!-- Chart will be rendered here -->
+      </div>
+    </div>
+  </div>
+  <!-- Chart Container -->
+  <div class="row mt-4">
+    <div class="col-md-4">
+      <div class="excel-card">
+        <div class="excel-card-header bg-primary text-white">
+          <h6 class="mb-0"><i class="fas fa-file-alt me-2"></i> Total Documents</h6>
         </div>
-        <div class="card-body">
-          <div id="handsontable-travel-memo" wire:ignore style="overflow-x:auto;"></div>
+        <div class="excel-card-body text-center">
+          <h2 id="total-docs-count">-</h2>
+          <p class="text-muted">All processed documents</p>
         </div>
       </div>
     </div>
-    <!-- O No. Sub-tab -->
-    <div class="tab-pane fade" id="ono" role="tabpanel" aria-labelledby="ono-tab">
-      <div class="card mb-4">
-        <div class="card-header d-flex align-items-center">
-          <i class="fas fa-file-alt me-2"></i>
-          <span>O No. DATE OF RELEASED</span>
-          <input type="text" id="search-ono" class="form-control ms-3 search-field" placeholder="Search O No.">
+    <div class="col-md-4">
+      <div class="excel-card">
+        <div class="excel-card-header bg-warning text-dark">
+          <h6 class="mb-0"><i class="fas fa-inbox me-2"></i> Incoming Documents</h6>
         </div>
-        <div class="card-body">
-          <div id="handsontable-ono" wire:ignore style="overflow-x:auto;"></div>
+        <div class="excel-card-body text-center">
+          <h2 id="incoming-docs-count">-</h2>
+          <p class="text-muted">Documents received</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="excel-card">
+        <div class="excel-card-header bg-success text-white">
+          <h6 class="mb-0"><i class="fas fa-paper-plane me-2"></i> Outgoing Documents</h6>
+        </div>
+        <div class="excel-card-body text-center">
+          <h2 id="outgoing-docs-count">-</h2>
+          <p class="text-muted">Documents sent</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="excel-card mt-4">
+    <div class="excel-card-header">
+      <h6><i class="fas fa-tags me-2"></i> Document Categories</h6>
+    </div>
+    <div class="excel-card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="text-end">Count</th>
+              <th class="text-end">Percentage</th>
+              <th>Distribution</th>
+            </tr>
+          </thead>
+          <tbody id="categories-table-body">
+            <tr>
+              <td colspan="4" class="text-center">Generate a report to see category breakdown</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Indicator -->
+  <div class="excel-loading" id="report-loading-indicator" style="display: none;">
+    <div class="excel-loading-spinner"></div>
+    <div class="excel-loading-text">Generating report...</div>
+  </div>
+</div>
+  <!-- Advanced Filter Modal -->
+  <div class="modal fade" id="advancedFilterModal" tabindex="-1" aria-labelledby="advancedFilterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="advancedFilterModalLabel">Advanced Filter</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="advanced-filter-form">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Document Type</label>
+                <select class="form-select" id="filter-doc-type" multiple>
+                  <option value="TRAVEL ORDER">Travel Order</option>
+                  <option value="ONO">O No.</option>
+                  <option value="RMO">RMO</option>
+                  <option value="MEMO-ORD">MEMO-ORD</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="filter-status" multiple>
+                  <option value="Released">Released</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Canceled">Canceled</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <label class="form-label">Date Range</label>
+                <div class="d-flex gap-2">
+                  <input type="date" class="form-control" id="filter-start-date">
+                  <span class="align-self-center">to</span>
+                  <input type="date" class="form-control" id="filter-end-date">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Keyword Search</label>
+                <input type="text" class="form-control" id="filter-keyword" placeholder="Search in subjects, remarks...">
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="apply-advanced-filter">Apply Filter</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-
-
-        <!-- Imports Tab: Separate sub-tabs for Incoming Import and Outgoing Import -->
-        <div class="tab-pane fade pt-3" id="imports" role="tabpanel" aria-labelledby="imports-tab">
-            <ul class="nav nav-tabs" id="importsSubTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="incoming-import-tab" data-bs-toggle="tab"
-                            data-bs-target="#incoming-import" type="button" role="tab"
-                            aria-controls="incoming-import" aria-selected="true">
-                        Incoming Import
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="outgoing-import-tab" data-bs-toggle="tab"
-                            data-bs-target="#outgoing-import" type="button" role="tab"
-                            aria-controls="outgoing-import" aria-selected="false">
-                        Outgoing Import
-                    </button>
-                </li>
-            </ul>
-            <div class="tab-content" id="importsSubTabsContent">
-                <!-- Incoming Import Subtab -->
-                <div class="tab-pane fade show active p-3" id="incoming-import" role="tabpanel" aria-labelledby="incoming-import-tab">
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <span>Import Incoming Excel Files (CSV, XLS, XLSX)</span>
-                        </div>
-                        <div class="card-body">
-                            <input type="file"
-                                   class="filepond"
-                                   name="incoming_filepond"
-                                   id="incoming-filepond"
-                                   accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-                        </div>
-                    </div>
-                </div>
-                <!-- Outgoing Import Subtab -->
-                <div class="tab-pane fade p-3" id="outgoing-import" role="tabpanel" aria-labelledby="outgoing-import-tab">
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <span>Import Outgoing Excel Files (CSV, XLS, XLSX)</span>
-                        </div>
-                        <div class="card-body">
-                            <input type="file"
-                                   class="filepond"
-                                   name="outgoing_filepond"
-                                   id="outgoing-filepond"
-                                   accept=".csv, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reports Tab (now its own main tab) -->
-        <div class="tab-pane fade pt-3" id="reports" role="tabpanel" aria-labelledby="reports-tab">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <span>Reports</span>
-                </div>
-                <div class="card-body">
-                    <!-- Place your report generation interface here -->
-                    <form action="{{ route('admin.outgoings.report') }}" method="GET">
-    <div class="form-group">
-        <label>Select Document Type:</label>
-        <select name="document_type" class="form-control">
-            <option value="TRAVEL ORDER">Travel Order</option>
-            <option value="ONO">O No.</option>
-            <option value="OTHER">Other</option>
-        </select>
-    </div>
-    <div class="form-group mt-2">
-        <label>Export As:</label>
-        <select name="export_type" class="form-control">
-            <option value="">View Only</option>
-            <option value="excel">Excel</option>
-            <option value="pdf">PDF</option>
-        </select>
-    </div>
-    <button type="submit" class="btn btn-primary mt-3">Generate Report</button>
-</form>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="excel-loading" id="loading-indicator" style="display: none;">
+  <div class="excel-loading-spinner"></div>
+  <div class="excel-loading-text">Loading data...</div>
 </div>
-
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 
  <!-- FilePond JS -->
  <script src="https://unpkg.com/filepond/dist/filepond.min.js"></script>
   <!-- FilePond plugin for file type validation -->
   <script src="https://unpkg.com/filepond-plugin-file-validate-type/dist/filepond-plugin-file-validate-type.min.js"></script>
+<script>
+  // Add this snippet to your JavaScript after the createEnhancedReportVisualization function
+document.addEventListener('DOMContentLoaded', function() {
+  // Chart type toggle buttons
+  const chartTypeBar = document.getElementById('chart-type-bar');
+  const chartTypePie = document.getElementById('chart-type-pie');
+  const chartTypeLine = document.getElementById('chart-type-line');
+  
+  let currentChartInstance = null;
+  
+  if (chartTypeBar && chartTypePie && chartTypeLine) {
+    // Bar chart (default)
+    chartTypeBar.addEventListener('click', function() {
+      setActiveChartButton(this);
+      if (currentChartInstance) {
+        currentChartInstance.destroy();
+      }
+      
+      const quarterlyChartContainer = document.getElementById('quarterly-chart-container');
+      quarterlyChartContainer.innerHTML = '<canvas id="quarterlyBarChart"></canvas>';
+      
+      const ctx = document.getElementById('quarterlyBarChart').getContext('2d');
+      currentChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: getCurrentChartData(),
+        options: getBarChartOptions()
+      });
+    });
+    
+    // Pie chart
+    chartTypePie.addEventListener('click', function() {
+      setActiveChartButton(this);
+      if (currentChartInstance) {
+        currentChartInstance.destroy();
+      }
+      
+      const quarterlyChartContainer = document.getElementById('quarterly-chart-container');
+      quarterlyChartContainer.innerHTML = '<canvas id="quarterlyPieChart"></canvas>';
+      
+      const ctx = document.getElementById('quarterlyPieChart').getContext('2d');
+      currentChartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: getPieChartData(),
+        options: getPieChartOptions()
+      });
+    });
+    
+    // Line chart
+    chartTypeLine.addEventListener('click', function() {
+      setActiveChartButton(this);
+      if (currentChartInstance) {
+        currentChartInstance.destroy();
+      }
+      
+      const quarterlyChartContainer = document.getElementById('quarterly-chart-container');
+      quarterlyChartContainer.innerHTML = '<canvas id="quarterlyLineChart"></canvas>';
+      
+      const ctx = document.getElementById('quarterlyLineChart').getContext('2d');
+      currentChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: getCurrentChartData(),
+        options: getLineChartOptions()
+      });
+    });
+  }
+  
+  // Helper functions
+  function setActiveChartButton(activeButton) {
+    [chartTypeBar, chartTypePie, chartTypeLine].forEach(btn => {
+      if (btn) btn.classList.remove('active');
+    });
+    activeButton.classList.add('active');
+  }
+  
+  function getCurrentChartData() {
+    // Get data from the global report data or use placeholder data
+    const incomingCounts = window.reportData?.incomingCounts || [10, 15, 20, 25];
+    const outgoingCounts = window.reportData?.outgoingCounts || [8, 12, 18, 22];
+    const labels = window.reportData?.byQuarter ? ['Q1', 'Q2', 'Q3', 'Q4'] : 
+                  ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    return {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Incoming Documents',
+          backgroundColor: 'rgba(0, 120, 212, 0.6)',
+          borderColor: 'rgb(0, 120, 212)',
+          borderWidth: 1,
+          data: incomingCounts
+        },
+        {
+          label: 'Outgoing Documents',
+          backgroundColor: 'rgba(232, 113, 15, 0.6)',
+          borderColor: 'rgb(232, 113, 15)',
+          borderWidth: 1,
+          data: outgoingCounts
+        }
+      ]
+    };
+  }
+  
+  // Replace the getPieChartData function with this improved version
+function getPieChartData() {
+  // Ensure we have valid reportData
+  if (!window.reportData) {
+    console.warn('No report data available');
+    return {
+      labels: ['No Data'],
+      datasets: [{
+        data: [1],
+        backgroundColor: ['#cccccc']
+      }]
+    };
+  }
+
+  // Get total counts for incoming and outgoing
+  const incomingTotal = Array.isArray(window.reportData.incomingCounts) ? 
+    window.reportData.incomingCounts.reduce((sum, val) => sum + val, 0) : 0;
+  
+  const outgoingTotal = Array.isArray(window.reportData.outgoingCounts) ?
+    window.reportData.outgoingCounts.reduce((sum, val) => sum + val, 0) : 0;
+  
+  // Ensure we have data to display
+  if (incomingTotal === 0 && outgoingTotal === 0) {
+    return {
+      labels: ['No Data'],
+      datasets: [{
+        data: [1],
+        backgroundColor: ['#cccccc']
+      }]
+    };
+  }
+
+  // For pie charts, we need a different data structure
+  return {
+    labels: ['Incoming Documents', 'Outgoing Documents'],
+    datasets: [{
+      data: [incomingTotal, outgoingTotal],
+      backgroundColor: [
+        'rgba(0, 120, 212, 0.7)',  // Blue for incoming
+        'rgba(232, 113, 15, 0.7)'  // Orange for outgoing
+      ],
+      borderColor: [
+        'rgb(0, 120, 212)',
+        'rgb(232, 113, 15)'
+      ],
+      borderWidth: 1
+    }]
+  };
+}
+  
+  function getBarChartOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Documents'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: window.reportData?.byQuarter ? 'Quarter' : 'Month'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: `Document Distribution (${window.reportData?.year || new Date().getFullYear()})`
+        }
+      }
+    };
+  }
+  
+  function getLineChartOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Documents'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: window.reportData?.byQuarter ? 'Quarter' : 'Month'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'top'
+        },
+        title: {
+          display: true,
+          text: `Document Trends (${window.reportData?.year || new Date().getFullYear()})`
+        }
+      }
+    };
+  }
+  
+  function getPieChartOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            boxWidth: 15,
+            padding: 20
+          }
+        },
+        title: {
+          display: true,
+          text: `Document Distribution (${window.reportData?.year || new Date().getFullYear()})`
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const value = context.parsed;
+              const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+              const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+              return `${context.label}: ${value} (${percentage}%)`;
+            }
+          }
+        }
+      }
+    };
+  }
+  
+  // Store report data in a global variable
+  window.reportData = null;
+  
+  // Modify the existing generateFilteredReport function to save the data
+  const originalGenerateFilteredReport = window.generateFilteredReport;
+  if (typeof originalGenerateFilteredReport === 'function') {
+    window.generateFilteredReport = function(quarter, docType) {
+      // Show loading indicator
+      const reportLoading = document.getElementById('report-loading-indicator');
+      if (reportLoading) reportLoading.style.display = 'flex';
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (quarter !== 'all') params.append('quarter', quarter);
+      if (docType !== 'all') params.append('doc_type', docType);
+      
+      // Fetch data from backend
+      fetch(`/admin/reports/quarterly-data?${params.toString()}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Save the data globally
+          window.reportData = data;
+          
+          // Update the chart
+          if (chartTypeBar.classList.contains('active')) {
+            chartTypeBar.click();
+          } else if (chartTypePie.classList.contains('active')) {
+            chartTypePie.click();
+          } else if (chartTypeLine.classList.contains('active')) {
+            chartTypeLine.click();
+          } else {
+            chartTypeBar.click(); // Default to bar chart
+          }
+          
+          if (reportLoading) reportLoading.style.display = 'none';
+        })
+        .catch(error => {
+          console.error('Error fetching quarterly data:', error);
+          if (reportLoading) reportLoading.style.display = 'none';
+          toastr.error('Error generating quarterly report: ' + error.message);
+        });
+    };
+  }
+  
+  // Initialize first chart when page loads
+  if (document.getElementById('reports-tab')) {
+    document.getElementById('reports-tab').addEventListener('shown.bs.tab', function() {
+      // Default to bar chart on first load
+      if (chartTypeBar && !currentChartInstance) {
+        chartTypeBar.click();
+      }
+    });
+  }
+});
+</script>
+<script>
+  // Add this to your existing JavaScript code to make the reports section functional
+
+document.addEventListener('DOMContentLoaded', function() {
+  // References to report elements
+  const generateReportBtn = document.getElementById('generate-report-btn');
+  const exportReportBtn = document.getElementById('export-report-btn');
+  const reportQuarter = document.getElementById('report-quarter');
+  const reportDocType = document.getElementById('report-doc-type');
+  const reportLoading = document.getElementById('report-loading-indicator');
+  const exportPdf = document.getElementById('export-pdf');
+  const exportExcel = document.getElementById('export-excel');
+  
+  // Report tab event listener
+  const reportsTab = document.getElementById('reports-tab');
+  if (reportsTab) {
+    reportsTab.addEventListener('shown.bs.tab', function() {
+      // Generate initial chart when tab is first shown
+      generateQuarterlyReport();
+    });
+  }
+  
+  // Generate report button click handler
+  if (generateReportBtn) {
+    generateReportBtn.addEventListener('click', function() {
+      const quarter = reportQuarter.value;
+      const docType = reportDocType.value;
+      generateFilteredReport(quarter, docType);
+    });
+  }
+  
+  // Export report button click handler
+  if (exportReportBtn) {
+    exportReportBtn.addEventListener('click', function() {
+      const quarter = reportQuarter.value;
+      const docType = reportDocType.value;
+      const format = document.querySelector('input[name="export-format"]:checked').value;
+      exportReport(quarter, docType, format);
+    });
+  }
+  
+  // Function to generate filtered quarterly report
+  function generateFilteredReport(quarter, docType) {
+    // Show loading indicator
+    if (reportLoading) reportLoading.style.display = 'flex';
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (quarter !== 'all') params.append('quarter', quarter);
+    if (docType !== 'all') params.append('doc_type', docType);
+    
+    // Fetch data from backend
+    fetch(`/admin/reports/quarterly-data?${params.toString()}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        createQuarterlyReportChart(data);
+        if (reportLoading) reportLoading.style.display = 'none';
+      })
+      .catch(error => {
+        console.error('Error fetching quarterly data:', error);
+        if (reportLoading) reportLoading.style.display = 'none';
+        toastr.error('Error generating quarterly report: ' + error.message);
+      });
+  }
+  
+  // Function to export report
+  // Replace or modify the exportReport function in your script
+  function exportReport(quarter, docType, format) {
+  // Build query parameters
+  const params = new URLSearchParams();
+  if (quarter !== 'all') params.append('quarter', quarter);
+  if (docType !== 'all') params.append('doc_type', docType);
+  params.append('format', format);
+  
+  // Show loading indicator
+  const reportLoading = document.getElementById('report-loading-indicator');
+  if (reportLoading) reportLoading.style.display = 'flex';
+  
+  // Log for debugging
+  console.log(`Attempting to export report with format: ${format}, quarter: ${quarter}, docType: ${docType}`);
+  
+  // Use the correct route
+  const exportUrl = `/admin/reports/export?${params.toString()}`;
+  console.log(`Export URL: ${exportUrl}`);
+  
+  // Create and trigger download
+  fetch(exportUrl)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+      return response.blob();
+    })
+    .then(blob => {
+      const fileExt = format === 'excel' ? 'xlsx' : 'pdf';
+      const filename = `report_${new Date().toISOString().slice(0, 10)}.${fileExt}`;
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      if (reportLoading) reportLoading.style.display = 'none';
+    })
+    .catch(error => {
+      console.error('Error downloading report:', error);
+      if (reportLoading) reportLoading.style.display = 'none';
+      toastr.error(`Error exporting report: ${error.message}`);
+    });
+}
+  // Function to create the quarterly report chart
+  function createQuarterlyReportChart(data) {
+    const chartContainer = document.getElementById('quarterly-chart-container');
+    if (!chartContainer) return;
+    
+    // Clear existing chart
+    chartContainer.innerHTML = '';
+    
+    // Create a canvas for the chart
+    const canvas = document.createElement('canvas');
+    canvas.id = 'quarterlyReportChart';
+    chartContainer.appendChild(canvas);
+    
+    // Get the canvas context
+    const ctx = canvas.getContext('2d');
+    
+    // Define chart data
+    let labels, incomingData, outgoingData;
+    
+    if (data.byQuarter) {
+      // Quarterly data
+      labels = ['Q1', 'Q2', 'Q3', 'Q4'];
+      incomingData = data.incomingCounts || [0, 0, 0, 0];
+      outgoingData = data.outgoingCounts || [0, 0, 0, 0];
+    } else if (data.byMonth) {
+      // Monthly data
+      labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      incomingData = data.incomingCounts || Array(12).fill(0);
+      outgoingData = data.outgoingCounts || Array(12).fill(0);
+    } else {
+      // Default to quarterly if structure is unknown
+      labels = ['Q1', 'Q2', 'Q3', 'Q4'];
+      incomingData = [0, 0, 0, 0];
+      outgoingData = [0, 0, 0, 0];
+    }
+    
+    // Create the chart
+    const chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Incoming Documents',
+            backgroundColor: 'rgba(0, 120, 212, 0.6)',
+            borderColor: 'rgb(0, 120, 212)',
+            borderWidth: 1,
+            data: incomingData
+          },
+          {
+            label: 'Outgoing Documents',
+            backgroundColor: 'rgba(232, 113, 15, 0.6)',
+            borderColor: 'rgb(232, 113, 15)',
+            borderWidth: 1,
+            data: outgoingData
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Number of Documents'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: data.byQuarter ? 'Quarter' : 'Month'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+          },
+          title: {
+            display: true,
+            text: `Document Summary (${data.year || new Date().getFullYear()})`
+          },
+          tooltip: {
+            callbacks: {
+              footer: function(tooltipItems) {
+                // Calculate the total for this label
+                const datasetIndex = tooltipItems[0].datasetIndex;
+                const index = tooltipItems[0].dataIndex;
+                const total = incomingData[index] + outgoingData[index];
+                return `Total: ${total} documents`;
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    // Add summary statistics below the chart
+    const totalIncoming = incomingData.reduce((sum, val) => sum + val, 0);
+    const totalOutgoing = outgoingData.reduce((sum, val) => sum + val, 0);
+    const totalDocs = totalIncoming + totalOutgoing;
+    
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'mt-4 p-3 border rounded bg-light';
+    summaryDiv.innerHTML = `
+      <h6 class="mb-3">Summary Statistics</h6>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="card bg-primary text-white mb-2">
+            <div class="card-body py-2">
+              <h3 class="card-title mb-0">${totalIncoming}</h3>
+              <p class="card-text small mb-0">Total Incoming</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-warning text-dark mb-2">
+            <div class="card-body py-2">
+              <h3 class="card-title mb-0">${totalOutgoing}</h3>
+              <p class="card-text small mb-0">Total Outgoing</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-success text-white mb-2">
+            <div class="card-body py-2">
+              <h3 class="card-title mb-0">${totalDocs}</h3>
+              <p class="card-text small mb-0">Total Documents</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    chartContainer.appendChild(summaryDiv);
+  }
+  
+  // Quarterly report generation function
+  function generateQuarterlyReport() {
+    // Show loading indicator
+    if (reportLoading) reportLoading.style.display = 'flex';
+    
+    // Fetch data from backend
+    fetch('/admin/reports/quarterly-data')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        createQuarterlyReportChart(data);
+        if (reportLoading) reportLoading.style.display = 'none';
+      })
+      .catch(error => {
+        console.error('Error fetching quarterly data:', error);
+        if (reportLoading) reportLoading.style.display = 'none';
+        toastr.error('Error generating quarterly report: ' + error.message);
+      });
+  }
+  // This function creates an enhanced report visualization with multiple chart types
+function createEnhancedReportVisualization(data) {
+  const chartContainer = document.getElementById('quarterly-chart-container');
+  if (!chartContainer) return;
+  
+  // Clear existing content
+  chartContainer.innerHTML = '';
+  
+  // Create report wrapper
+  const reportWrapper = document.createElement('div');
+  reportWrapper.className = 'report-wrapper';
+  chartContainer.appendChild(reportWrapper);
+  
+  // Create report header with title and period
+  const reportHeader = document.createElement('div');
+  reportHeader.className = 'mb-4 d-flex justify-content-between align-items-center';
+  
+  const periodText = data.quarterFilter ? 
+    `Q${data.quarterFilter} ${data.year || new Date().getFullYear()}` : 
+    `Year ${data.year || new Date().getFullYear()}`;
+  
+  reportHeader.innerHTML = `
+    <h5 class="m-0"><i class="fas fa-chart-bar me-2"></i>Document Distribution Report</h5>
+    <span class="badge bg-secondary">${periodText}</span>
+  `;
+  reportWrapper.appendChild(reportHeader);
+  
+  // Create tab navigation for different chart types
+  const chartTabs = document.createElement('ul');
+  chartTabs.className = 'nav nav-tabs mb-3';
+  chartTabs.innerHTML = `
+    <li class="nav-item">
+      <a class="nav-link active" id="bar-chart-tab" data-bs-toggle="tab" href="#bar-chart-content">Bar Chart</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="pie-chart-tab" data-bs-toggle="tab" href="#pie-chart-content">Distribution</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="line-chart-tab" data-bs-toggle="tab" href="#line-chart-content">Trend</a>
+    </li>
+  `;
+  reportWrapper.appendChild(chartTabs);
+  
+  // Create tab content container
+  const tabContent = document.createElement('div');
+  tabContent.className = 'tab-content';
+  reportWrapper.appendChild(tabContent);
+  
+  // 1. Bar Chart Tab Content
+  const barChartTab = document.createElement('div');
+  barChartTab.className = 'tab-pane fade show active';
+  barChartTab.id = 'bar-chart-content';
+  tabContent.appendChild(barChartTab);
+  
+  const barChartCanvas = document.createElement('canvas');
+  barChartCanvas.id = 'barChart';
+  barChartCanvas.style.height = '350px';
+  barChartTab.appendChild(barChartCanvas);
+  
+  // 2. Pie Chart Tab Content
+  const pieChartTab = document.createElement('div');
+  pieChartTab.className = 'tab-pane fade';
+  pieChartTab.id = 'pie-chart-content';
+  tabContent.appendChild(pieChartTab);
+  
+  // Create a row for two pie charts
+  const pieChartsRow = document.createElement('div');
+  pieChartsRow.className = 'row';
+  pieChartTab.appendChild(pieChartsRow);
+  
+  // Left column for incoming distribution
+  const leftPieCol = document.createElement('div');
+  leftPieCol.className = 'col-md-6';
+  pieChartsRow.appendChild(leftPieCol);
+  
+  const incomingPieContainer = document.createElement('div');
+  incomingPieContainer.className = 'card h-100';
+  incomingPieContainer.innerHTML = `
+    <div class="card-header">
+      <h6 class="m-0">Incoming Documents by Category</h6>
+    </div>
+    <div class="card-body">
+      <canvas id="incomingPieChart" style="height: 250px;"></canvas>
+    </div>
+  `;
+  leftPieCol.appendChild(incomingPieContainer);
+  
+  // Right column for outgoing distribution
+  const rightPieCol = document.createElement('div');
+  rightPieCol.className = 'col-md-6';
+  pieChartsRow.appendChild(rightPieCol);
+  
+  const outgoingPieContainer = document.createElement('div');
+  outgoingPieContainer.className = 'card h-100';
+  outgoingPieContainer.innerHTML = `
+    <div class="card-header">
+      <h6 class="m-0">Outgoing Documents by Category</h6>
+    </div>
+    <div class="card-body">
+      <canvas id="outgoingPieChart" style="height: 250px;"></canvas>
+    </div>
+  `;
+  rightPieCol.appendChild(outgoingPieContainer);
+  
+  // 3. Line Chart Tab Content
+  const lineChartTab = document.createElement('div');
+  lineChartTab.className = 'tab-pane fade';
+  lineChartTab.id = 'line-chart-content';
+  tabContent.appendChild(lineChartTab);
+  
+  const lineChartCanvas = document.createElement('canvas');
+  lineChartCanvas.id = 'lineChart';
+  lineChartCanvas.style.height = '350px';
+  lineChartTab.appendChild(lineChartCanvas);
+  
+  // Add summary statistics below the charts
+  const summaryStats = document.createElement('div');
+  summaryStats.className = 'row mt-4 stats-summary';
+  
+  // Calculate totals
+  const incomingTotal = data.incomingCounts ? data.incomingCounts.reduce((sum, val) => sum + val, 0) : 0;
+  const outgoingTotal = data.outgoingCounts ? data.outgoingCounts.reduce((sum, val) => sum + val, 0) : 0;
+  const totalDocs = incomingTotal + outgoingTotal;
+  
+  // Create summary cards
+  summaryStats.innerHTML = `
+    <div class="col-md-3">
+      <div class="card border-0 bg-light">
+        <div class="card-body text-center">
+          <h3 class="text-primary mb-1">${totalDocs}</h3>
+          <p class="text-muted mb-0 small">Total Documents</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 bg-light">
+        <div class="card-body text-center">
+          <h3 class="text-info mb-1">${incomingTotal}</h3>
+          <p class="text-muted mb-0 small">Incoming Documents</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 bg-light">
+        <div class="card-body text-center">
+          <h3 class="text-warning mb-1">${outgoingTotal}</h3>
+          <p class="text-muted mb-0 small">Outgoing Documents</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 bg-light">
+        <div class="card-body text-center">
+          <h3 class="text-success mb-1">${Math.round((outgoingTotal / (incomingTotal || 1)) * 100)}%</h3>
+          <p class="text-muted mb-0 small">Processing Rate</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  reportWrapper.appendChild(summaryStats);
+  
+  // Function to determine chart labels based on data
+  function getChartLabels() {
+    if (data.quarterFilter) {
+      // If filtering by quarter, show months within that quarter
+      const quarterMonths = {
+        1: ['January', 'February', 'March'],
+        2: ['April', 'May', 'June'],
+        3: ['July', 'August', 'September'],
+        4: ['October', 'November', 'December']
+      };
+      return quarterMonths[data.quarterFilter] || [];
+    } else if (data.byMonth) {
+      return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    } else {
+      return ['Q1', 'Q2', 'Q3', 'Q4'];
+    }
+  }
+  
+  // Get labels for the charts
+  const chartLabels = getChartLabels();
+  
+  // Get data for the charts
+  const incomingData = data.incomingCounts || Array(chartLabels.length).fill(0);
+  const outgoingData = data.outgoingCounts || Array(chartLabels.length).fill(0);
+  
+  // 1. Initialize Bar Chart
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  const barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: chartLabels,
+      datasets: [
+        {
+          label: 'Incoming Documents',
+          backgroundColor: 'rgba(0, 120, 212, 0.6)',
+          borderColor: 'rgb(0, 120, 212)',
+          borderWidth: 1,
+          data: incomingData
+        },
+        {
+          label: 'Outgoing Documents',
+          backgroundColor: 'rgba(232, 113, 15, 0.6)',
+          borderColor: 'rgb(232, 113, 15)',
+          borderWidth: 1,
+          data: outgoingData
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Documents'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: data.quarterFilter ? 'Month' : (data.byMonth ? 'Month' : 'Quarter')
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        tooltip: {
+          callbacks: {
+            footer: function(tooltipItems) {
+              const total = incomingData[tooltipItems[0].dataIndex] + outgoingData[tooltipItems[0].dataIndex];
+              return `Total: ${total} documents`;
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // 2. Initialize Pie Charts
+  // Sample category data (this would come from your backend in a real implementation)
+  const incomingCategories = {
+    'TRAVEL ORDER': incomingTotal * 0.25,
+    'RMO': incomingTotal * 0.15,
+    'MEMO-ORD': incomingTotal * 0.2,
+    'ONO': incomingTotal * 0.1,
+    'Others': incomingTotal * 0.3
+  };
+  
+  const outgoingCategories = {
+    'TRAVEL ORDER': outgoingTotal * 0.3,
+    'RMO': outgoingTotal * 0.2,
+    'MEMO-ORD': outgoingTotal * 0.15,
+    'ONO': outgoingTotal * 0.25,
+    'Others': outgoingTotal * 0.1
+  };
+  
+  const incomingPieCtx = document.getElementById('incomingPieChart').getContext('2d');
+  const incomingPieChart = new Chart(incomingPieCtx, {
+    type: 'pie',
+    data: {
+      labels: Object.keys(incomingCategories),
+      datasets: [{
+        data: Object.values(incomingCategories),
+        backgroundColor: [
+          'rgba(0, 123, 255, 0.7)',
+          'rgba(40, 167, 69, 0.7)',
+          'rgba(255, 193, 7, 0.7)',
+          'rgba(23, 162, 184, 0.7)',
+          'rgba(108, 117, 125, 0.7)'
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            boxWidth: 15
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const value = context.raw;
+              const percentage = Math.round((value / incomingTotal) * 100);
+              return `${context.label}: ${value} (${percentage}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  const outgoingPieCtx = document.getElementById('outgoingPieChart').getContext('2d');
+  const outgoingPieChart = new Chart(outgoingPieCtx, {
+    type: 'pie',
+    data: {
+      labels: Object.keys(outgoingCategories),
+      datasets: [{
+        data: Object.values(outgoingCategories),
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.7)',
+          'rgba(54, 162, 235, 0.7)',
+          'rgba(255, 206, 86, 0.7)',
+          'rgba(75, 192, 192, 0.7)',
+          'rgba(153, 102, 255, 0.7)'
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            boxWidth: 15
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const value = context.raw;
+              const percentage = Math.round((value / outgoingTotal) * 100);
+              return `${context.label}: ${value} (${percentage}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // 3. Initialize Line Chart
+  // Generate monthly data if we have quarterly data
+  const lineChartLabels = data.byMonth ? 
+    ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] : 
+    chartLabels;
+  
+  // Transform quarterly data to monthly if needed
+  let incomingLineData = data.byMonth ? incomingData : [];
+  let outgoingLineData = data.byMonth ? outgoingData : [];
+  
+  if (!data.byMonth && !data.quarterFilter) {
+    // Generate monthly data from quarterly data (sample distribution)
+    incomingLineData = [];
+    outgoingLineData = [];
+    for (let q = 0; q < 4; q++) {
+      const qVal = incomingData[q] || 0;
+      const qOutVal = outgoingData[q] || 0;
+      // Distribute quarterly value across months (with some variation)
+      for (let m = 0; m < 3; m++) {
+        const monthIndex = q * 3 + m;
+        const monthVariation = 0.8 + Math.random() * 0.4; // 80-120% of average
+        incomingLineData[monthIndex] = Math.round(qVal / 3 * monthVariation);
+        outgoingLineData[monthIndex] = Math.round(qOutVal / 3 * monthVariation);
+      }
+    }
+  }
+  
+  const lineCtx = document.getElementById('lineChart').getContext('2d');
+  const lineChart = new Chart(lineCtx, {
+    type: 'line',
+    data: {
+      labels: lineChartLabels,
+      datasets: [
+        {
+          label: 'Incoming Documents',
+          data: incomingLineData,
+          borderColor: 'rgb(0, 123, 255)',
+          backgroundColor: 'rgba(0, 123, 255, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3
+        },
+        {
+          label: 'Outgoing Documents',
+          data: outgoingLineData,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Documents'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Month'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+        }
+      }
+    }
+  });
+  
+  // Return the chart instances in case they need to be updated later
+  return {
+    barChart,
+    incomingPieChart,
+    outgoingPieChart,
+    lineChart
+  };
+}
+
+// Make the function globally available
+window.createEnhancedReportVisualization = createEnhancedReportVisualization;
+});
+</script>
+
   <script>
+    
   // Define the function in the global scope
   function autoFillSpareRow(hotInstance) {
     const rowCount = hotInstance.countRows();
@@ -307,6 +2544,200 @@
   window.autoFillSpareRow = autoFillSpareRow;
   
 </script>
+
+<script>
+  /**
+ * Add this to your JavaScript file to ensure search works across all Handsontable versions
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize search functionality for each table
+  addSearchFunctionality('search-incomings', 'handsontable-incomings', window.hotIncomings);
+  addSearchFunctionality('search-outgoings', 'handsontable-outgoings', window.hotOutgoings);
+  addSearchFunctionality('search-travel-memo', 'handsontable-travel-memo', window.hotTravelMemo);
+  addSearchFunctionality('search-ono', 'handsontable-ono', window.hotOno);
+  
+  // Add the search highlight style
+  const style = document.createElement('style');
+  style.textContent = `
+    .ht__highlight {
+      background-color: rgba(255, 237, 51, 0.3) !important;
+    }
+    .ht__active_highlight {
+      background-color: rgba(255, 237, 51, 0.7) !important;
+    }
+  `;
+  document.head.appendChild(style);
+  
+  /**
+   * Attach search functionality to a table using the search input
+   */
+  function addSearchFunctionality(searchInputId, tableContainerId, hotInstance) {
+    const searchInput = document.getElementById(searchInputId);
+    const tableContainer = document.getElementById(tableContainerId);
+    
+    if (!searchInput || !tableContainer || !hotInstance) return;
+    
+    let searchTimeout;
+    let currentHighlight = null;
+    let searchMatches = [];
+    let currentMatchIndex = 0;
+    
+    // Function to highlight all matches
+    function highlightMatches(query) {
+      // Clear previous highlights first
+      clearHighlights();
+      
+      if (!query) return;
+      
+      // Convert query to lowercase for case-insensitive search
+      const queryLower = query.toLowerCase();
+      searchMatches = [];
+      
+      // Search through all data
+      const data = hotInstance.getData();
+      if (!data) return;
+      
+      for (let row = 0; row < data.length; row++) {
+        for (let col = 0; col < data[row].length; col++) {
+          const cellValue = String(data[row][col] || '').toLowerCase();
+          if (cellValue.includes(queryLower)) {
+            searchMatches.push({row, col});
+          }
+        }
+      }
+      
+      // Apply highlight classes to all matches
+      searchMatches.forEach(({row, col}) => {
+        const meta = hotInstance.getCellMeta(row, col);
+        const className = meta.className || '';
+        meta.className = `${className} ht__highlight`.trim();
+        hotInstance.setCellMeta(row, col, 'className', meta.className);
+      });
+      
+      // Highlight the first match with active highlight
+      if (searchMatches.length > 0) {
+        currentMatchIndex = 0;
+        highlightActiveMatch();
+        
+        // Report the number of matches found
+        toastr.info(`Found ${searchMatches.length} matches`, null, {timeOut: 2000});
+      } else {
+        toastr.warning('No matches found', null, {timeOut: 2000});
+      }
+      
+      hotInstance.render();
+    }
+    
+    // Function to highlight the currently active match
+    function highlightActiveMatch() {
+      if (searchMatches.length === 0) return;
+      
+      const {row, col} = searchMatches[currentMatchIndex];
+      
+      // Add active highlight class
+      const meta = hotInstance.getCellMeta(row, col);
+      const baseClassName = meta.className.replace('ht__active_highlight', '').trim();
+      meta.className = `${baseClassName} ht__active_highlight`;
+      hotInstance.setCellMeta(row, col, 'className', meta.className);
+      
+      // Select and scroll to the cell
+      hotInstance.selectCell(row, col);
+      hotInstance.scrollViewportTo(row, col);
+      
+      hotInstance.render();
+    }
+    
+    // Function to clear all highlights
+    function clearHighlights() {
+      const data = hotInstance.getData();
+      if (!data) return;
+      
+      for (let row = 0; row < hotInstance.countRows(); row++) {
+        for (let col = 0; col < hotInstance.countCols(); col++) {
+          const meta = hotInstance.getCellMeta(row, col);
+          if (meta.className) {
+            meta.className = meta.className
+              .replace('ht__highlight', '')
+              .replace('ht__active_highlight', '')
+              .trim();
+            
+            hotInstance.setCellMeta(row, col, 'className', meta.className || null);
+          }
+        }
+      }
+      
+      searchMatches = [];
+      currentMatchIndex = 0;
+      hotInstance.render();
+    }
+    
+    // Search input handler with debounce
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      
+      const query = this.value.trim();
+      
+      searchTimeout = setTimeout(() => {
+        if (query) {
+          highlightMatches(query);
+        } else {
+          clearHighlights();
+        }
+      }, 300);
+    });
+    
+    // Add "Next" button next to search
+    const nextButton = document.createElement('button');
+    nextButton.className = 'excel-button';
+    nextButton.innerHTML = '<i class="fas fa-arrow-down"></i>';
+    nextButton.title = 'Find next (F3)';
+    nextButton.style.marginLeft = '8px';
+    nextButton.onclick = findNext;
+    
+    // Insert the button after the search input
+    searchInput.parentNode.insertAdjacentElement('afterend', nextButton);
+    
+    // Find next match function
+    function findNext() {
+      if (searchMatches.length === 0) return;
+      
+      // Move to the next match
+      currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
+      highlightActiveMatch();
+    }
+    
+    // Find previous match function
+    function findPrevious() {
+      if (searchMatches.length === 0) return;
+      
+      // Move to the previous match
+      currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+      highlightActiveMatch();
+    }
+    
+    // Add keyboard shortcut for F3 (find next)
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'F3') {
+        e.preventDefault();
+        findNext();
+      } else if (e.key === 'F3' && e.shiftKey) {
+        e.preventDefault();
+        findPrevious();
+      }
+    });
+    
+    // Add a "Previous" button
+    const prevButton = document.createElement('button');
+    prevButton.className = 'excel-button';
+    prevButton.innerHTML = '<i class="fas fa-arrow-up"></i>';
+    prevButton.title = 'Find previous (Shift+F3)';
+    prevButton.onclick = findPrevious;
+    
+    // Insert the button after the next button
+    nextButton.insertAdjacentElement('afterend', prevButton);
+  }
+});
+  </script>
 <script> function isRowEmpty(rowData) {
   if (!rowData) return true;
   // Only check key fields that a user should fill manually
@@ -638,21 +3069,25 @@ function dateRenderer(instance, td, row, col, prop, value, cellProperties) {
   td.innerText = value;
 }
 // Custom time renderer to convert 24h time to 12h time with AM/PM.
+// Fix the time rendering function
 function timeRenderer(instance, td, row, col, prop, value, cellProperties) {
-  let formattedValue = value;
   if (value) {
-    // Assume value is in a standard 24h format ("HH:mm:ss" or "HH:mm")
-    // Use moment.js (make sure it is included) to convert to 12h format.
-    var time = moment(value, ["HH:mm:ss", "HH:mm"]);
-    if (time.isValid()) {
-      formattedValue = time.format("h:mm A");
+    try {
+      // Try to parse the value as a valid time
+      const time = moment(value, ['HH:mm:ss', 'HH:mm', 'h:mm A']);
+      if (time.isValid()) {
+        value = time.format('h:mm A');
+      }
+    } catch (e) {
+      // If parsing fails, keep the original value
+      console.warn('Failed to parse time:', value);
     }
   }
+  
+  // Apply the standard text renderer with our formatted value
   Handsontable.renderers.TextRenderer.apply(this, arguments);
-  td.innerText = formattedValue;
+  td.innerText = value || '';
 }
-
-
   /* ---------------------------------------------------------------------
    * Common helpers
    * ------------------------------------------------------------------- */
@@ -684,7 +3119,113 @@ function timeRenderer(instance, td, row, col, prop, value, cellProperties) {
       td.title = '';
     }
   }
+// Quarterly report generation function
+function generateQuarterlyReport() {
+  // Show loading indicator
+  document.getElementById('loading-indicator').style.display = 'flex';
+  
+  // Fetch data from backend
+  fetch('/admin/reports/quarterly-data')
+    .then(response => response.json())
+    .then(data => {
+      createQuarterlyReportChart(data);
+      document.getElementById('loading-indicator').style.display = 'none';
+    })
+    .catch(error => {
+      console.error('Error fetching quarterly data:', error);
+      document.getElementById('loading-indicator').style.display = 'none';
+      toastr.error('Error generating quarterly report.');
+    });
+}
 
+// Function to create the chart
+function createQuarterlyReportChart(data) {
+  const chartContainer = document.getElementById('quarterly-chart-container');
+  chartContainer.innerHTML = '';
+  
+  // Create the chart
+  const chartWrapper = document.createElement('div');
+  chartWrapper.className = 'excel-card';
+  chartWrapper.innerHTML = `
+    <div class="excel-card-header">
+      <h6><i class="fas fa-chart-bar me-2"></i> Quarterly Document Report (${data.year})</h6>
+    </div>
+    <div class="excel-card-body">
+      <canvas id="quarterlyReportChart" width="100%" height="50"></canvas>
+    </div>
+    <div class="excel-card-footer">
+      <button class="excel-button" id="download-report-excel">
+        <i class="fas fa-file-excel"></i> Download Excel
+      </button>
+      <button class="excel-button" id="download-report-pdf">
+        <i class="fas fa-file-pdf"></i> Download PDF
+      </button>
+    </div>
+  `;
+  
+  chartContainer.appendChild(chartWrapper);
+  
+  // Use Chart.js to create the chart
+  const ctx = document.getElementById('quarterlyReportChart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+      datasets: [
+        {
+          label: 'Incoming Documents',
+          backgroundColor: 'rgba(0, 120, 212, 0.6)',
+          borderColor: 'rgb(0, 120, 212)',
+          borderWidth: 1,
+          data: data.incomingCounts
+        },
+        {
+          label: 'Outgoing Documents',
+          backgroundColor: 'rgba(232, 113, 15, 0.6)',
+          borderColor: 'rgb(232, 113, 15)',
+          borderWidth: 1,
+          data: data.outgoingCounts
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Documents'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Quarter'
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: `Quarterly Document Summary (${data.year})`
+        }
+      }
+    }
+  });
+  
+  // Add event listeners for export buttons
+  document.getElementById('download-report-excel').addEventListener('click', function() {
+    window.location.href = `/admin/reports/quarterly-export?type=excel&year=${data.year}`;
+  });
+  
+  document.getElementById('download-report-pdf').addEventListener('click', function() {
+    window.location.href = `/admin/reports/quarterly-export?type=pdf&year=${data.year}`;
+  });
+}
   function clearHighlights(hotInstance) {
     const rowCount = hotInstance.countRows();
     const colCount = hotInstance.countCols();
@@ -2022,5 +4563,200 @@ if (blankOutgoing) {
   });
 
 });
+</script>
+<script>
+  /**
+ * Add this to your JavaScript file to ensure search works across all Handsontable versions
+ */
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize search functionality for each table
+  addSearchFunctionality('search-incomings', 'handsontable-incomings', window.hotIncomings);
+  addSearchFunctionality('search-outgoings', 'handsontable-outgoings', window.hotOutgoings);
+  addSearchFunctionality('search-travel-memo', 'handsontable-travel-memo', window.hotTravelMemo);
+  addSearchFunctionality('search-ono', 'handsontable-ono', window.hotOno);
+  
+  // Add the search highlight style
+  const style = document.createElement('style');
+  style.textContent = `
+    .ht__highlight {
+      background-color: rgba(255, 237, 51, 0.3) !important;
+    }
+    .ht__active_highlight {
+      background-color: rgba(255, 237, 51, 0.7) !important;
+    }
+  `;
+  document.head.appendChild(style);
+  
+  /**
+   * Attach search functionality to a table using the search input
+   */
+  function addSearchFunctionality(searchInputId, tableContainerId, hotInstance) {
+    const searchInput = document.getElementById(searchInputId);
+    const tableContainer = document.getElementById(tableContainerId);
+    
+    if (!searchInput || !tableContainer || !hotInstance) return;
+    
+    let searchTimeout;
+    let currentHighlight = null;
+    let searchMatches = [];
+    let currentMatchIndex = 0;
+    
+    // Function to highlight all matches
+    function highlightMatches(query) {
+      // Clear previous highlights first
+      clearHighlights();
+      
+      if (!query) return;
+      
+      // Convert query to lowercase for case-insensitive search
+      const queryLower = query.toLowerCase();
+      searchMatches = [];
+      
+      // Search through all data
+      const data = hotInstance.getData();
+      if (!data) return;
+      
+      for (let row = 0; row < data.length; row++) {
+        for (let col = 0; col < data[row].length; col++) {
+          const cellValue = String(data[row][col] || '').toLowerCase();
+          if (cellValue.includes(queryLower)) {
+            searchMatches.push({row, col});
+          }
+        }
+      }
+      
+      // Apply highlight classes to all matches
+      searchMatches.forEach(({row, col}) => {
+        const meta = hotInstance.getCellMeta(row, col);
+        const className = meta.className || '';
+        meta.className = `${className} ht__highlight`.trim();
+        hotInstance.setCellMeta(row, col, 'className', meta.className);
+      });
+      
+      // Highlight the first match with active highlight
+      if (searchMatches.length > 0) {
+        currentMatchIndex = 0;
+        highlightActiveMatch();
+        
+        // Report the number of matches found
+        toastr.info(`Found ${searchMatches.length} matches`, null, {timeOut: 2000});
+      } else {
+        toastr.warning('No matches found', null, {timeOut: 2000});
+      }
+      
+      hotInstance.render();
+    }
+    
+    // Function to highlight the currently active match
+    function highlightActiveMatch() {
+      if (searchMatches.length === 0) return;
+      
+      const {row, col} = searchMatches[currentMatchIndex];
+      
+      // Add active highlight class
+      const meta = hotInstance.getCellMeta(row, col);
+      const baseClassName = meta.className.replace('ht__active_highlight', '').trim();
+      meta.className = `${baseClassName} ht__active_highlight`;
+      hotInstance.setCellMeta(row, col, 'className', meta.className);
+      
+      // Select and scroll to the cell
+      hotInstance.selectCell(row, col);
+      hotInstance.scrollViewportTo(row, col);
+      
+      hotInstance.render();
+    }
+    
+    // Function to clear all highlights
+    function clearHighlights() {
+      const data = hotInstance.getData();
+      if (!data) return;
+      
+      for (let row = 0; row < hotInstance.countRows(); row++) {
+        for (let col = 0; col < hotInstance.countCols(); col++) {
+          const meta = hotInstance.getCellMeta(row, col);
+          if (meta.className) {
+            meta.className = meta.className
+              .replace('ht__highlight', '')
+              .replace('ht__active_highlight', '')
+              .trim();
+            
+            hotInstance.setCellMeta(row, col, 'className', meta.className || null);
+          }
+        }
+      }
+      
+      searchMatches = [];
+      currentMatchIndex = 0;
+      hotInstance.render();
+    }
+    
+    // Search input handler with debounce
+    searchInput.addEventListener('input', function() {
+      clearTimeout(searchTimeout);
+      
+      const query = this.value.trim();
+      
+      searchTimeout = setTimeout(() => {
+        if (query) {
+          highlightMatches(query);
+        } else {
+          clearHighlights();
+        }
+      }, 300);
+    });
+    
+    // Add "Next" button next to search
+    const nextButton = document.createElement('button');
+    nextButton.className = 'excel-button';
+    nextButton.innerHTML = '<i class="fas fa-arrow-down"></i>';
+    nextButton.title = 'Find next (F3)';
+    nextButton.style.marginLeft = '8px';
+    nextButton.onclick = findNext;
+    
+    // Insert the button after the search input
+    searchInput.parentNode.insertAdjacentElement('afterend', nextButton);
+    
+    // Find next match function
+    function findNext() {
+      if (searchMatches.length === 0) return;
+      
+      // Move to the next match
+      currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
+      highlightActiveMatch();
+    }
+    
+    // Find previous match function
+    function findPrevious() {
+      if (searchMatches.length === 0) return;
+      
+      // Move to the previous match
+      currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+      highlightActiveMatch();
+    }
+    
+    // Add keyboard shortcut for F3 (find next)
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'F3') {
+        e.preventDefault();
+        findNext();
+      } else if (e.key === 'F3' && e.shiftKey) {
+        e.preventDefault();
+        findPrevious();
+      }
+    });
+    
+    // Add a "Previous" button
+    const prevButton = document.createElement('button');
+    prevButton.className = 'excel-button';
+    prevButton.innerHTML = '<i class="fas fa-arrow-up"></i>';
+    prevButton.title = 'Find previous (Shift+F3)';
+    prevButton.onclick = findPrevious;
+    
+    // Insert the button after the next button
+    nextButton.insertAdjacentElement('afterend', prevButton);
+  }
+  
+});
+
 </script>
 @endpush
